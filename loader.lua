@@ -1,12 +1,11 @@
 -- ============================================================
--- PVP99 - SELETOR DE VOCACAO COMPACTO
+-- PVP99 - VOCATION SELECTOR CLEAN
 -- ============================================================
 
 local BASE_URL =
   "https://raw.githubusercontent.com/oficiallpvp99/PVP99-Caves/refs/heads/main/"
 
 local VOCATIONS = {
-
   knight = {
     name = "KNIGHT",
     file = "knight.lua",
@@ -36,268 +35,183 @@ local VOCATIONS = {
     file = "druid.lua",
     icon = 47375
   }
-
 }
 
 local loading = false
 
-
 -- ============================================================
--- INTERFACE
+-- UI
 -- ============================================================
 
 g_ui.loadUIFromString([[
 
 VocationCard < Button
-  width: 112
-  height: 66
-
-  background-color: #252329
-
+  width: 100
+  height: 62
+  background-color: #242229
   border-width: 1
-  border-color: #45404b
-
+  border-color: #47434f
   color: #ffffff
-
   font: verdana-11px-rounded
-
   text-align: bottom
   text-offset: 0 -4
 
-  checkable: true
-
   $hover:
-    background-color: #302936
+    background-color: #302737
     border-color: #d75cff
+    color: #ffffff
 
   $pressed:
-    background-color: #382640
-    border-color: #ef82ff
-
-  $checked:
-    background-color: #202b23
-    border-color: #55ff77
-    color: #7dff95
+    background-color: #3a2942
+    border-color: #ef7aff
 
 
 Pvp99VocationWindow < MainWindow
-
   id: pvp99VocationWindow
-
   text: PVP99
-
-  size: 280 300
-
+  size: 250 265
   @onEscape: self:hide()
 
 
   Label
     id: title
-
     text: ESCOLHA SUA VOCACAO
-
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
-
     margin-top: 5
-
-    color: #ed73ff
-
+    color: #ed74ff
     font: verdana-11px-rounded
 
 
   Label
     id: subtitle
-
-    text: Selecione o macro que deseja carregar
-
+    text: Selecione o macro
     anchors.top: title.bottom
     anchors.horizontalCenter: parent.horizontalCenter
-
     margin-top: 3
-
-    color: #dddddd
-
+    color: #bdb8c2
     font: verdana-11px-rounded
-
 
 
   VocationCard
     id: knightButton
-
     text: KNIGHT
-
     anchors.top: subtitle.bottom
     anchors.left: parent.left
-
     margin-top: 10
-    margin-left: 16
-
+    margin-left: 14
 
     Label
       id: knightCheck
-
       text: ✓
-
       anchors.top: parent.top
       anchors.right: parent.right
-
       margin-top: 3
       margin-right: 5
-
-      color: #55ff77
-
+      color: #55ff88
       visible: false
       phantom: true
-
 
 
   VocationCard
     id: monkButton
-
     text: MONK
-
     anchors.top: subtitle.bottom
     anchors.right: parent.right
-
     margin-top: 10
-    margin-right: 16
-
+    margin-right: 14
 
     Label
       id: monkCheck
-
       text: ✓
-
       anchors.top: parent.top
       anchors.right: parent.right
-
       margin-top: 3
       margin-right: 5
-
-      color: #55ff77
-
+      color: #55ff88
       visible: false
       phantom: true
-
 
 
   VocationCard
     id: paladinButton
-
     text: PALADIN
-
     anchors.top: knightButton.bottom
     anchors.left: parent.left
-
-    margin-top: 7
-    margin-left: 16
-
+    margin-top: 6
+    margin-left: 14
 
     Label
       id: paladinCheck
-
       text: ✓
-
       anchors.top: parent.top
       anchors.right: parent.right
-
       margin-top: 3
       margin-right: 5
-
-      color: #55ff77
-
+      color: #55ff88
       visible: false
       phantom: true
-
 
 
   VocationCard
     id: sorcererButton
-
     text: SORCERER
-
     anchors.top: monkButton.bottom
     anchors.right: parent.right
-
-    margin-top: 7
-    margin-right: 16
-
+    margin-top: 6
+    margin-right: 14
 
     Label
       id: sorcererCheck
-
       text: ✓
-
       anchors.top: parent.top
       anchors.right: parent.right
-
       margin-top: 3
       margin-right: 5
-
-      color: #55ff77
-
+      color: #55ff88
       visible: false
       phantom: true
-
 
 
   VocationCard
     id: druidButton
-
     text: DRUID
-
     anchors.top: paladinButton.bottom
     anchors.horizontalCenter: parent.horizontalCenter
-
-    margin-top: 7
-
+    margin-top: 6
 
     Label
       id: druidCheck
-
       text: ✓
-
       anchors.top: parent.top
       anchors.right: parent.right
-
       margin-top: 3
       margin-right: 5
-
-      color: #55ff77
-
+      color: #55ff88
       visible: false
       phantom: true
 
 
-
   Button
     id: cancelButton
-
     text: CANCELAR
-
-    width: 86
-    height: 22
-
+    width: 82
+    height: 21
     anchors.top: druidButton.bottom
     anchors.horizontalCenter: parent.horizontalCenter
-
     margin-top: 7
 
 ]])
 
-
 -- ============================================================
--- JANELA
+-- WINDOW
 -- ============================================================
 
-local root =
-  g_ui.getRootWidget()
+local root = g_ui.getRootWidget()
 
 if not root then
   return
 end
-
 
 local old =
   root:recursiveGetChildById(
@@ -308,86 +222,52 @@ if old then
   old:destroy()
 end
 
-
 local window =
   UI.createWindow(
     "Pvp99VocationWindow",
     root
   )
 
-
-local status =
-  window:recursiveGetChildById(
-    "subtitle"
-  )
-
-
 -- ============================================================
--- BOTOES
+-- BUTTONS
 -- ============================================================
 
 local buttons = {
-
   knight =
-    window:recursiveGetChildById(
-      "knightButton"
-    ),
+    window:recursiveGetChildById("knightButton"),
 
   monk =
-    window:recursiveGetChildById(
-      "monkButton"
-    ),
+    window:recursiveGetChildById("monkButton"),
 
   paladin =
-    window:recursiveGetChildById(
-      "paladinButton"
-    ),
+    window:recursiveGetChildById("paladinButton"),
 
   sorcerer =
-    window:recursiveGetChildById(
-      "sorcererButton"
-    ),
+    window:recursiveGetChildById("sorcererButton"),
 
   druid =
-    window:recursiveGetChildById(
-      "druidButton"
-    )
-
+    window:recursiveGetChildById("druidButton")
 }
-
 
 local checks = {
-
   knight =
-    window:recursiveGetChildById(
-      "knightCheck"
-    ),
+    window:recursiveGetChildById("knightCheck"),
 
   monk =
-    window:recursiveGetChildById(
-      "monkCheck"
-    ),
+    window:recursiveGetChildById("monkCheck"),
 
   paladin =
-    window:recursiveGetChildById(
-      "paladinCheck"
-    ),
+    window:recursiveGetChildById("paladinCheck"),
 
   sorcerer =
-    window:recursiveGetChildById(
-      "sorcererCheck"
-    ),
+    window:recursiveGetChildById("sorcererCheck"),
 
   druid =
-    window:recursiveGetChildById(
-      "druidCheck"
-    )
-
+    window:recursiveGetChildById("druidCheck")
 }
 
-
 -- ============================================================
--- ICONES
+-- ICONS
 -- ============================================================
 
 local function createIcon(button, itemId)
@@ -406,31 +286,20 @@ local function createIcon(button, itemId)
     return
   end
 
-
   icon:setSize({
-    width = 38,
-    height = 38
+    width = 36,
+    height = 36
   })
 
-
   if icon.setItemId then
-
-    icon:setItemId(
-      itemId
-    )
-
+    icon:setItemId(itemId)
   end
-
 
   if icon.setVirtual then
-
     icon:setVirtual(true)
-
   end
 
-
   icon:setPhantom(true)
-
 
   icon:addAnchor(
     AnchorTop,
@@ -438,18 +307,15 @@ local function createIcon(button, itemId)
     AnchorTop
   )
 
-
   icon:addAnchor(
     AnchorHorizontalCenter,
     "parent",
     AnchorHorizontalCenter
   )
 
-
   icon:setMarginTop(2)
 
 end
-
 
 for key, data in pairs(VOCATIONS) do
 
@@ -460,40 +326,25 @@ for key, data in pairs(VOCATIONS) do
 
 end
 
-
 -- ============================================================
--- SELECAO
+-- CHECK
 -- ============================================================
 
-local function clearSelection()
+local function clearChecks()
 
-  for key, button in pairs(buttons) do
+  for _, check in pairs(checks) do
 
-    button:setChecked(false)
-
-    if checks[key] then
-      checks[key]:hide()
+    if check then
+      check:hide()
     end
 
   end
 
 end
 
-
 local function selectVocation(key)
 
-  clearSelection()
-
-  local button =
-    buttons[key]
-
-  if not button then
-    return
-  end
-
-
-  button:setChecked(true)
-
+  clearChecks()
 
   if checks[key] then
     checks[key]:show()
@@ -501,9 +352,8 @@ local function selectVocation(key)
 
 end
 
-
 -- ============================================================
--- CARREGAMENTO
+-- LOAD
 -- ============================================================
 
 local function loadVocation(key)
@@ -512,7 +362,6 @@ local function loadVocation(key)
     return
   end
 
-
   local data =
     VOCATIONS[key]
 
@@ -520,113 +369,66 @@ local function loadVocation(key)
     return
   end
 
-
   selectVocation(key)
-
 
   loading = true
 
-
-  status:setText(
-    "Carregando " ..
-    data.name ..
-    "..."
-  )
-
-
-  status:setColor(
-    "#ed73ff"
-  )
-
-
   HTTP.get(
-
     BASE_URL .. data.file,
 
     function(script)
 
-
       loading = false
 
+      if not script or script == "" then
 
-      if not script or
-         script == ""
-      then
-
-        status:setText(
-          "Falha ao carregar"
+        print(
+          "[PVP99] Falha ao baixar " ..
+          data.name
         )
 
-        status:setColor(
-          "#ff5555"
-        )
+        clearChecks()
 
         return
-
       end
-
 
       local func, err =
         loadstring(script)
 
-
       if not func then
 
-        status:setText(
-          "Erro no script"
-        )
-
-        status:setColor(
-          "#ff5555"
-        )
-
         print(
-          "[PVP99] " ..
+          "[PVP99] Erro " ..
+          data.name ..
+          ": " ..
           tostring(err)
         )
 
+        clearChecks()
+
         return
-
       end
-
 
       local ok, runError =
         pcall(func)
 
-
       if not ok then
 
-        status:setText(
-          "Erro ao executar"
-        )
-
-        status:setColor(
-          "#ff5555"
-        )
-
         print(
-          "[PVP99] " ..
+          "[PVP99] Erro executando " ..
+          data.name ..
+          ": " ..
           tostring(runError)
         )
 
-        return
+        clearChecks()
 
+        return
       end
 
-
-      status:setText(
-        data.name ..
-        " CARREGADO!"
-      )
-
-
-      status:setColor(
-        "#55ff77"
-      )
-
-
+      -- fecha sem mensagem verde bugada
       schedule(
-        600,
+        250,
         function()
 
           if window then
@@ -641,73 +443,40 @@ local function loadVocation(key)
 
 end
 
-
 -- ============================================================
--- CLIQUES
+-- CLICK EVENTS
 -- ============================================================
 
-buttons.knight.onClick =
-  function()
+buttons.knight.onClick = function()
+  loadVocation("knight")
+end
 
-    loadVocation(
-      "knight"
-    )
+buttons.monk.onClick = function()
+  loadVocation("monk")
+end
 
-  end
+buttons.paladin.onClick = function()
+  loadVocation("paladin")
+end
 
+buttons.sorcerer.onClick = function()
+  loadVocation("sorcerer")
+end
 
-buttons.monk.onClick =
-  function()
-
-    loadVocation(
-      "monk"
-    )
-
-  end
-
-
-buttons.paladin.onClick =
-  function()
-
-    loadVocation(
-      "paladin"
-    )
-
-  end
-
-
-buttons.sorcerer.onClick =
-  function()
-
-    loadVocation(
-      "sorcerer"
-    )
-
-  end
-
-
-buttons.druid.onClick =
-  function()
-
-    loadVocation(
-      "druid"
-    )
-
-  end
-
+buttons.druid.onClick = function()
+  loadVocation("druid")
+end
 
 window:recursiveGetChildById(
   "cancelButton"
-).onClick =
-  function()
+).onClick = function()
 
-    window:hide()
+  window:hide()
 
-  end
-
+end
 
 -- ============================================================
--- ABRE
+-- OPEN
 -- ============================================================
 
 window:show()
