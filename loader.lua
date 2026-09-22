@@ -1,5 +1,6 @@
 -- ============================================================
 -- PVP99 - SELETOR DE VOCACAO MEDIEVAL
+-- AJUSTADO
 -- ============================================================
 
 local BASE_URL =
@@ -8,35 +9,30 @@ local BASE_URL =
 local VOCATIONS = {
   knight = {
     name = "KNIGHT",
-    desc = "Tanque",
     file = "knight.lua",
     image = BASE_URL .. "knight.png"
   },
 
   monk = {
     name = "MONK",
-    desc = "Combo",
     file = "monk.lua",
     image = BASE_URL .. "monk.png?v=2"
   },
 
   paladin = {
     name = "PALADIN",
-    desc = "Distancia",
     file = "paladin.lua",
     image = BASE_URL .. "paladin.png"
   },
 
   sorcerer = {
     name = "SORCERER",
-    desc = "Magia",
     file = "sorcerer.lua",
     image = BASE_URL .. "sorcerer.png"
   },
 
   druid = {
     name = "DRUID",
-    desc = "Suporte",
     file = "druid.lua",
     image = BASE_URL .. "druid.png"
   }
@@ -47,8 +43,8 @@ local loading = false
 g_ui.loadUIFromString([[
 
 Pvp99VocationCard < Button
-  width: 108
-  height: 82
+  width: 112
+  height: 84
   background-color: #2b241f
   border-width: 1
   border-color: #5b4a35
@@ -65,7 +61,7 @@ Pvp99VocationCard < Button
 Pvp99VocationWindow < MainWindow
   id: pvp99VocationWindow
   text: PVP99
-  size: 270 338
+  size: 280 344
   @onEscape: self:hide()
 
   Label
@@ -79,7 +75,7 @@ Pvp99VocationWindow < MainWindow
 
   Label
     id: subtitle
-    text: Selecione sua classe
+    text: Selecione
     anchors.top: title.bottom
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 2
@@ -107,17 +103,17 @@ Pvp99VocationWindow < MainWindow
       text: KNIGHT
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 15
+      margin-bottom: 18
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
 
     Label
       id: knightDesc
-      text: Tanque
+      text: Selecionar
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 3
+      margin-bottom: 4
       color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
@@ -155,17 +151,17 @@ Pvp99VocationWindow < MainWindow
       text: MONK
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 15
+      margin-bottom: 18
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
 
     Label
       id: monkDesc
-      text: Combo
+      text: Selecionar
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 3
+      margin-bottom: 4
       color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
@@ -203,17 +199,17 @@ Pvp99VocationWindow < MainWindow
       text: PALADIN
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 15
+      margin-bottom: 18
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
 
     Label
       id: paladinDesc
-      text: Distancia
+      text: Selecionar
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 3
+      margin-bottom: 4
       color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
@@ -251,17 +247,17 @@ Pvp99VocationWindow < MainWindow
       text: SORCERER
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 15
+      margin-bottom: 18
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
 
     Label
       id: sorcererDesc
-      text: Magia
+      text: Selecionar
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 3
+      margin-bottom: 4
       color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
@@ -298,17 +294,17 @@ Pvp99VocationWindow < MainWindow
       text: DRUID
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 15
+      margin-bottom: 18
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
 
     Label
       id: druidDesc
-      text: Suporte
+      text: Selecionar
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 3
+      margin-bottom: 4
       color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
@@ -407,9 +403,13 @@ end
 
 local function selectVocation(key)
   clearChecks()
+
   if checks[key] then
     checks[key]:show()
   end
+
+  subtitle:setText("Ativado")
+  subtitle:setColor("#8dff9c")
 end
 
 local function loadVocation(key)
@@ -420,9 +420,6 @@ local function loadVocation(key)
 
   loading = true
   selectVocation(key)
-
-  subtitle:setText("Carregando " .. data.name .. "...")
-  subtitle:setColor("#f0d8a0")
 
   HTTP.get(BASE_URL .. data.file, function(script)
     loading = false
@@ -452,9 +449,6 @@ local function loadVocation(key)
       print("[PVP99] Erro executando " .. data.name .. ": " .. tostring(runError))
       return
     end
-
-    subtitle:setText(data.name .. " carregado")
-    subtitle:setColor("#8dff9c")
 
     schedule(350, function()
       if window then
