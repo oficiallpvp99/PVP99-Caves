@@ -1,4 +1,5 @@
 
+
 local ropeId = 3003  -- ID da Rope
 local useOnSelf = true  -- Variável para usar em você mesmo
 
@@ -590,7 +591,6 @@ if rootWidget then
   end
 end
 
-
 local SpellTab = addTab("Target")
 local name = UI.Label("SORCERER")
 
@@ -825,11 +825,17 @@ addIcon("CUR", {item=12809, text="exura",}, function(icon, isOn)
 end)
 
 -- ============================================================
--- DRUID AURERA / TELARIA - V5
--- STANCES + CURA AVANCADA + ROTACAO COMPLETA
+-- SORCERER AURERA / TELARIA - V5
+-- STANCES ELEMENTAIS + CRIPPLING + ROTACAO
 --
--- SHARED CONSERVATION = utura sio
--- ELEMENTAL SYNTHESIS = utito dru
+-- ELEMENTAIS:
+-- Master of Flames  = uteta flam
+-- Master of Thunder = uteta vis
+-- Master of Decay   = uteta mort
+--
+-- CRIPPLING:
+-- Aura of Sapped Strength    = exori kor tempo
+-- Aura of Exposed Weakness   = exori moe tempo
 --
 -- Padrao V5:
 -- * sem PNG externo
@@ -837,18 +843,15 @@ end)
 -- * texto fixo nos botoes
 -- * verde/vermelho instantaneo no clique
 -- * mensagem do servidor sincroniza o estado real depois
+-- * elemental e crippling independentes
 -- * rotacao circular
--- * cura propria antes do ataque
--- * Restoration automatica em emergencia (level 300+)
--- * Strong Ice/Terra Strike adicionadas
--- * sem bloqueio por player proximo
 -- * rotacao inicia desligada
 -- ============================================================
 
 setDefaultTab('MAIN')
 
-storage.druidAureraV5 = storage.druidAureraV5 or {}
-local cfg = storage.druidAureraV5
+storage.sorcererAureraV5 = storage.sorcererAureraV5 or {}
+local cfg = storage.sorcererAureraV5
 
 local function default(k, v)
   if cfg[k] == nil then
@@ -859,26 +862,12 @@ end
 default('attackGap', 2100)
 default('actionGap', 300)
 
-default('autoHeal', true)
-default('healAt', 70)
-default('healWords', 'exura vita')
-default('healMana', 160)
-default('healCD', 1000)
-
-default('forkedGlacierOn', true)
-default('forkedThornsOn', true)
-default('eternalWinterOn', true)
-default('wrathNatureOn', true)
-default('strongIceWaveOn', true)
-default('terraWaveOn', true)
-default('ultimateIceOn', true)
-default('ultimateTerraOn', true)
-default('strongIceStrikeOn', true)
-default('strongTerraStrikeOn', true)
-
--- Cura avançada
-default('restorationOn', true)
-default('restorationAt', 45)
+default('deathEchoOn', true)
+default('hellsCoreOn', true)
+default('rageOn', true)
+default('energyWaveOn', true)
+default('greatFireWaveOn', true)
+default('greatDeathBeamOn', true)
 
 -- ============================================================
 -- ICONES NATIVOS DO CLIENTE
@@ -886,14 +875,12 @@ default('restorationAt', 45)
 -- ============================================================
 
 local SERVER_ICONS = {
-  -- Soulhexer (Druid)
-  synthesis = 34091,
-
-  -- Soulshanks (Druid)
-  conservation = 34092,
-
-  -- Icone nativo usado no bot/rotacao
-  rotation = 47373
+  flames = 34090,
+  thunder = 34095,
+  decay = 34096,
+  sapped = 34091,
+  exposed = 34094,
+  rotation = 47372
 }
 
 -- ============================================================
@@ -904,19 +891,18 @@ local function clock()
   return now or g_clock.millis()
 end
 
-local stance = 'unknown'
-local pending = nil
-local pendingAt = 0
+local elemental = 'unknown'
+local crippling = 'unknown'
+
+local elementalPending = nil
+local elementalPendingAt = 0
+
+local cripplingPending = nil
+local cripplingPendingAt = 0
 
 local last = {}
 local globalNext = 0
-local groupNext = {
-  attack = 0,
-  healing = 0,
-  focus = 0,
-  special = 0,
-  ultimate = 0
-}
+local focusNext = 0 -- Rage of the Skies + Hell's Core compartilham Focus CD de 40s
 
 local icons = {}
 local rotation = nil
@@ -935,15 +921,33 @@ end
 
 local function refreshUI()
   label(
-    icons.conservation,
-    'utura sio',
-    stance == 'conservation' and '#55ff55' or '#ff5555'
+    icons.flames,
+    'uteta flam',
+    elemental == 'flames' and '#55ff55' or '#ff5555'
   )
 
   label(
-    icons.synthesis,
-    'utito dru',
-    stance == 'synthesis' and '#55ff55' or '#ff5555'
+    icons.thunder,
+    'uteta vis',
+    elemental == 'thunder' and '#55ff55' or '#ff5555'
+  )
+
+  label(
+    icons.decay,
+    'uteta mort',
+    elemental == 'decay' and '#55ff55' or '#ff5555'
+  )
+
+  label(
+    icons.sapped,
+    'exori kor tempo',
+    crippling == 'sapped' and '#55ff55' or '#ff5555'
+  )
+
+  label(
+    icons.exposed,
+    'exori moe tempo',
+    crippling == 'exposed' and '#55ff55' or '#ff5555'
   )
 
   if icons.rotation and rotation then
@@ -956,28 +960,28 @@ local function refreshUI()
 end
 
 -- ============================================================
--- TROCA / DESATIVA STANCE
+-- TROCA / DESATIVA ELEMENTAL
 -- Cor muda na hora. Servidor confirma/corrige depois.
 -- ============================================================
 
-local function chooseStance(wanted, words)
+local function chooseElemental(wanted, words)
   if not g_game.isOnline() then
     return
   end
 
-  if pending then
+  if elementalPending then
     return
   end
 
-  local togglingOff = (stance == wanted)
+  local togglingOff = (elemental == wanted)
 
-  pending = togglingOff and 'off' or wanted
-  pendingAt = clock()
+  elementalPending = togglingOff and 'off' or wanted
+  elementalPendingAt = clock()
 
   if togglingOff then
-    stance = 'unknown'
+    elemental = 'unknown'
   else
-    stance = wanted
+    elemental = wanted
   end
 
   refreshUI()
@@ -991,44 +995,122 @@ local function chooseStance(wanted, words)
 end
 
 -- ============================================================
--- ICONES DAS STANCES
+-- TROCA / DESATIVA CRIPPLING
+-- Independente da stance elemental.
 -- ============================================================
 
-icons.conservation = addIcon(
-  'druidAureraConservationV5',
+local function chooseCrippling(wanted, words)
+  if not g_game.isOnline() then
+    return
+  end
+
+  if cripplingPending then
+    return
+  end
+
+  local togglingOff = (crippling == wanted)
+
+  cripplingPending = togglingOff and 'off' or wanted
+  cripplingPendingAt = clock()
+
+  if togglingOff then
+    crippling = 'unknown'
+  else
+    crippling = wanted
+  end
+
+  refreshUI()
+
+  globalNext = math.max(
+    globalNext,
+    clock() + cfg.actionGap
+  )
+
+  say(words)
+end
+
+-- ============================================================
+-- ICONES ELEMENTAIS
+-- ============================================================
+
+icons.flames = addIcon(
+  'sorcAureraFlamesV5',
   {
-    item = { id = SERVER_ICONS.conservation, count = 1 },
-    text = 'utura sio',
+    item = { id = SERVER_ICONS.flames, count = 1 },
+    text = 'uteta flam',
     switchable = false,
     moveable = true
   },
   function()
-    chooseStance('conservation', 'utura sio')
+    chooseElemental('flames', 'uteta flam')
   end
 )
 
-icons.conservation:setSize({
-  width = 64,
-  height = 64
-})
+icons.flames:setSize({width = 64, height = 64})
 
-icons.synthesis = addIcon(
-  'druidAureraSynthesisV5',
+icons.thunder = addIcon(
+  'sorcAureraThunderV5',
   {
-    item = { id = SERVER_ICONS.synthesis, count = 1 },
-    text = 'utito dru',
+    item = { id = SERVER_ICONS.thunder, count = 1 },
+    text = 'uteta vis',
     switchable = false,
     moveable = true
   },
   function()
-    chooseStance('synthesis', 'utito dru')
+    chooseElemental('thunder', 'uteta vis')
   end
 )
 
-icons.synthesis:setSize({
-  width = 64,
-  height = 64
-})
+icons.thunder:setSize({width = 64, height = 64})
+
+icons.decay = addIcon(
+  'sorcAureraDecayV5',
+  {
+    item = { id = SERVER_ICONS.decay, count = 1 },
+    text = 'uteta mort',
+    switchable = false,
+    moveable = true
+  },
+  function()
+    chooseElemental('decay', 'uteta mort')
+  end
+)
+
+icons.decay:setSize({width = 64, height = 64})
+
+-- ============================================================
+-- ICONES CRIPPLING
+-- ============================================================
+
+icons.sapped = addIcon(
+  'sorcAureraSappedV5',
+  {
+    item = { id = SERVER_ICONS.sapped, count = 1 },
+    text = 'exori kor tempo',
+    switchable = false,
+    moveable = true
+  },
+  function()
+    chooseCrippling('sapped', 'exori kor tempo')
+  end
+)
+
+icons.sapped:setSize({width = 64, height = 64})
+
+icons.exposed = addIcon(
+  'sorcAureraExposedV5',
+  {
+    item = { id = SERVER_ICONS.exposed, count = 1 },
+    text = 'exori moe tempo',
+    switchable = false,
+    moveable = true
+  },
+  function()
+    chooseCrippling('exposed', 'exori moe tempo')
+  end
+)
+
+icons.exposed:setSize({width = 64, height = 64})
 
 -- ============================================================
 -- CONFIRMACAO / SINCRONIZACAO PELO SERVIDOR
@@ -1047,28 +1129,62 @@ onTextMessage(function(mode, text)
   local changed = false
   local off = isOffMessage(msg)
 
-  if msg:find('shared conservation', 1, true) then
+  -- ELEMENTAIS
+  if msg:find('master of flames', 1, true) then
     if off then
-      if stance == 'conservation' then
-        stance = 'unknown'
+      if elemental == 'flames' then
+        elemental = 'unknown'
       end
     else
-      stance = 'conservation'
+      elemental = 'flames'
     end
-
-    pending = nil
+    elementalPending = nil
     changed = true
 
-  elseif msg:find('elemental synthesis', 1, true) then
+  elseif msg:find('master of thunder', 1, true) then
     if off then
-      if stance == 'synthesis' then
-        stance = 'unknown'
+      if elemental == 'thunder' then
+        elemental = 'unknown'
       end
     else
-      stance = 'synthesis'
+      elemental = 'thunder'
     end
+    elementalPending = nil
+    changed = true
 
-    pending = nil
+  elseif msg:find('master of decay', 1, true) then
+    if off then
+      if elemental == 'decay' then
+        elemental = 'unknown'
+      end
+    else
+      elemental = 'decay'
+    end
+    elementalPending = nil
+    changed = true
+  end
+
+  -- CRIPPLING
+  if msg:find('aura of sapped strength', 1, true) then
+    if off then
+      if crippling == 'sapped' then
+        crippling = 'unknown'
+      end
+    else
+      crippling = 'sapped'
+    end
+    cripplingPending = nil
+    changed = true
+
+  elseif msg:find('aura of exposed weakness', 1, true) then
+    if off then
+      if crippling == 'exposed' then
+        crippling = 'unknown'
+      end
+    else
+      crippling = 'exposed'
+    end
+    cripplingPending = nil
     changed = true
   end
 
@@ -1150,224 +1266,97 @@ local function countMonsters(snapshot, range)
 end
 
 -- ============================================================
--- CURA PROPRIA
--- ============================================================
-
-local function tryHeal(time)
-  if not cfg.autoHeal then
-    return false
-  end
-
-  local hp = hppercent()
-
-  if time < groupNext.healing then
-    return false
-  end
-
-  -- Restoration: cura mais forte do Druid/Sorcerer.
-  -- Level 300+, 260 mana, 6s de cooldown.
-  if
-    cfg.restorationOn
-    and lvl() >= 300
-    and hp <= cfg.restorationAt
-    and mana() >= 260
-    and time >= (last['exura max vita'] or 0)
-  then
-    last['exura max vita'] = time + 6000
-    groupNext.healing = time + 1000
-    globalNext = time + cfg.actionGap
-    say('exura max vita')
-    return true
-  end
-
-  if hp > cfg.healAt then
-    return false
-  end
-
-  if mana() < cfg.healMana then
-    return false
-  end
-
-  if time < (last[cfg.healWords] or 0) then
-    return false
-  end
-
-  last[cfg.healWords] = time + cfg.healCD
-  groupNext.healing = time + 1000
-  globalNext = time + cfg.actionGap
-
-  say(cfg.healWords)
-  return true
-end
-
--- ============================================================
--- ROTACAO DRUID
--- Circular para passar por gelo e terra.
+-- ROTACAO SORCERER
+-- Circular para nao ficar presa sempre na primeira magia.
 -- ============================================================
 
 local attackSpells = {
-
   {
-    name = 'Strong Ice Strike',
-    words = 'exori gran frigo',
-    mana = 60,
-    level = 80,
-    range = 7,
-    mobs = 1,
-    cd = 8000,
-    groupCD = 2000,
-    secondary = 'special',
-    secondaryCD = 8000,
-    area = false,
-    enabled = function()
-      return cfg.strongIceStrikeOn
-    end
-  },
-
-  {
-    name = 'Strong Terra Strike',
-    words = 'exori gran tera',
-    mana = 60,
-    level = 70,
-    range = 7,
-    mobs = 1,
-    cd = 8000,
-    groupCD = 2000,
-    secondary = 'special',
-    secondaryCD = 8000,
-    area = false,
-    enabled = function()
-      return cfg.strongTerraStrikeOn
-    end
-  },
-
-  {
-    name = 'Forked Glacier',
-    words = 'exevo fur frigo',
-    mana = 180,
-    level = 90,
+    name = 'Death Echo',
+    words = 'exevo mort ora',
+    mana = 150,
+    level = 120,
     range = 7,
     mobs = 1,
     cd = 6000,
-    groupCD = 2000,
     area = true,
     enabled = function()
-      return cfg.forkedGlacierOn
+      return cfg.deathEchoOn
     end
   },
 
   {
-    name = 'Forked Thorns',
-    words = 'exevo fur tera',
-    mana = 180,
-    level = 80,
-    range = 7,
-    mobs = 1,
-    cd = 6000,
-    groupCD = 2000,
-    area = true,
-    enabled = function()
-      return cfg.forkedThornsOn
-    end
-  },
-
-  {
-    name = 'Eternal Winter',
-    words = 'exevo gran mas frigo',
-    mana = 1050,
-    level = 60,
-    range = 7,
-    mobs = 2,
-    cd = 40000,
-    groupCD = 4000,
-    secondary = 'focus',
-    secondaryCD = 40000,
-    area = true,
-    enabled = function()
-      return cfg.eternalWinterOn
-    end
-  },
-
-  {
-    name = 'Wrath of Nature',
-    words = 'exevo gran mas tera',
-    mana = 700,
+    name = 'Rage of the Skies',
+    words = 'exevo gran mas vis',
+    mana = 600,
     level = 55,
     range = 7,
     mobs = 2,
     cd = 40000,
-    groupCD = 4000,
-    secondary = 'focus',
-    secondaryCD = 40000,
     area = true,
+    focus = true,
     enabled = function()
-      return cfg.wrathNatureOn
+      return cfg.rageOn
     end
   },
 
   {
-    name = 'Strong Ice Wave',
-    words = 'exevo gran frigo hur',
-    mana = 170,
-    level = 40,
-    range = 5,
-    mobs = 1,
-    cd = 4000,
-    groupCD = 2000,
+    name = 'Hells Core',
+    words = 'exevo gran mas flam',
+    mana = 1100,
+    level = 60,
+    range = 7,
+    mobs = 2,
+    cd = 40000,
     area = true,
-    turning = true,
+    focus = true,
     enabled = function()
-      return cfg.strongIceWaveOn
+      return cfg.hellsCoreOn
     end
   },
 
   {
-    name = 'Terra Wave',
-    words = 'exevo tera hur',
+    name = 'Energy Wave',
+    words = 'exevo vis hur',
     mana = 170,
     level = 38,
     range = 5,
     mobs = 1,
-    cd = 4000,
-    groupCD = 2000,
+    cd = 8000,
     area = true,
     turning = true,
     enabled = function()
-      return cfg.terraWaveOn
+      return cfg.energyWaveOn
     end
   },
 
   {
-    name = 'Ultimate Ice Strike',
-    words = 'exori max frigo',
-    mana = 100,
-    level = 100,
-    range = 7,
+    name = 'Great Fire Wave',
+    words = 'exevo gran flam hur',
+    mana = 120,
+    level = 38,
+    range = 5,
     mobs = 1,
-    cd = 30000,
-    groupCD = 2000,
-    secondary = 'ultimate',
-    secondaryCD = 30000,
-    area = false,
+    cd = 4000,
+    area = true,
+    turning = true,
     enabled = function()
-      return cfg.ultimateIceOn
+      return cfg.greatFireWaveOn
     end
   },
 
   {
-    name = 'Ultimate Terra Strike',
-    words = 'exori max tera',
-    mana = 100,
-    level = 90,
-    range = 7,
+    name = 'Great Death Beam',
+    words = 'exevo max mort',
+    mana = 140,
+    level = 66,
+    range = 6,
     mobs = 1,
-    cd = 30000,
-    groupCD = 2000,
-    secondary = 'ultimate',
-    secondaryCD = 30000,
-    area = false,
+    cd = 6000,
+    area = true,
+    turning = true,
     enabled = function()
-      return cfg.ultimateTerraOn
+      return cfg.greatDeathBeamOn
     end
   }
 }
@@ -1430,14 +1419,7 @@ local function canCast(spell, time, p, tp, snapshot)
     return false
   end
 
-  if time < groupNext.attack then
-    return false
-  end
-
-  if
-    spell.secondary
-    and time < (groupNext[spell.secondary] or 0)
-  then
+  if spell.focus and time < focusNext then
     return false
   end
 
@@ -1463,16 +1445,11 @@ local function castCircular(list, time, p, tp, snapshot)
       end
 
       last[spell.words] = time + spell.cd
-
-      groupNext.attack =
-        time + (spell.groupCD or 2000)
-
-      if spell.secondary then
-        groupNext[spell.secondary] =
-          time + (spell.secondaryCD or 0)
-      end
-
       globalNext = time + cfg.attackGap
+
+      if spell.focus then
+        focusNext = time + 40000
+      end
 
       say(spell.words)
 
@@ -1490,7 +1467,7 @@ end
 
 rotation = macro(
   100,
-  'Druid Rotacao V5',
+  'Sorcerer Rotacao V5',
   function()
     if not g_game.isOnline() then
       return
@@ -1500,14 +1477,7 @@ rotation = macro(
       return
     end
 
-    local time = clock()
-
-    if time < globalNext then
-      return
-    end
-
-    -- Cura tem prioridade.
-    if tryHeal(time) then
+    if clock() < globalNext then
       return
     end
 
@@ -1524,6 +1494,7 @@ rotation = macro(
       return
     end
 
+    local time = clock()
     local snapshot = makeSnapshot(p)
 
     castCircular(
@@ -1543,7 +1514,7 @@ rotation.setOff()
 -- ============================================================
 
 icons.rotation = addIcon(
-  'druidAureraRotationV5',
+  'sorcAureraRotationV5',
   {
     item = { id = SERVER_ICONS.rotation, count = 1 },
     text = 'atack',
@@ -1552,10 +1523,7 @@ icons.rotation = addIcon(
   rotation
 )
 
-icons.rotation:setSize({
-  width = 64,
-  height = 64
-})
+icons.rotation:setSize({width = 64, height = 64})
 
 -- ============================================================
 -- LOGIN / LOGOUT / TIMEOUT
@@ -1569,40 +1537,43 @@ macro(
     local online = g_game.isOnline()
 
     if not online then
-      stance = 'unknown'
-      pending = nil
+      elemental = 'unknown'
+      crippling = 'unknown'
+
+      elementalPending = nil
+      cripplingPending = nil
 
       last = {}
       globalNext = 0
-      groupNext.attack = 0
-      groupNext.healing = 0
-      groupNext.focus = 0
-      groupNext.special = 0
-      groupNext.ultimate = 0
+      focusNext = 0
       attackIndex = 1
 
     elseif not wasOnline then
       -- As stances podem persistir no servidor.
-      -- A UI sera sincronizada pelas mensagens futuras.
-      pending = nil
+      -- O macro aguarda mensagens futuras para sincronizar.
+      elementalPending = nil
+      cripplingPending = nil
 
       last = {}
       globalNext = 0
-      groupNext.attack = 0
-      groupNext.healing = 0
-      groupNext.focus = 0
-      groupNext.special = 0
-      groupNext.ultimate = 0
+      focusNext = 0
       attackIndex = 1
     end
 
     wasOnline = online
 
     if
-      pending
-      and clock() - pendingAt > 5000
+      elementalPending
+      and clock() - elementalPendingAt > 5000
     then
-      pending = nil
+      elementalPending = nil
+    end
+
+    if
+      cripplingPending
+      and clock() - cripplingPendingAt > 5000
+    then
+      cripplingPending = nil
     end
 
     refreshUI()
@@ -1610,9 +1581,15 @@ macro(
 )
 
 -- ============================================================
--- INICIALIZA UI
+-- INICIALIZA
 -- ============================================================
 
 refreshUI()
+
+-- V5 Sorcerer:
+-- 1 elemental + 1 crippling podem ficar verdes simultaneamente.
+-- Clique = feedback instantaneo.
+-- Mensagem do servidor = sincronizacao posterior.
+-- Death Echo incluida na rotacao.
 
 
