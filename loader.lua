@@ -1,6 +1,5 @@
 -- ============================================================
--- PVP99 - VOCATION SELECTOR V3
--- Medieval Compacto
+-- PVP99 - SELETOR DE VOCACAO MEDIEVAL
 -- ============================================================
 
 local BASE_URL =
@@ -9,30 +8,35 @@ local BASE_URL =
 local VOCATIONS = {
   knight = {
     name = "KNIGHT",
+    desc = "Tanque",
     file = "knight.lua",
     image = BASE_URL .. "knight.png"
   },
 
   monk = {
     name = "MONK",
+    desc = "Combo",
     file = "monk.lua",
     image = BASE_URL .. "monk.png?v=2"
   },
 
   paladin = {
     name = "PALADIN",
+    desc = "Distancia",
     file = "paladin.lua",
     image = BASE_URL .. "paladin.png"
   },
 
   sorcerer = {
     name = "SORCERER",
+    desc = "Magia",
     file = "sorcerer.lua",
     image = BASE_URL .. "sorcerer.png"
   },
 
   druid = {
     name = "DRUID",
+    desc = "Suporte",
     file = "druid.lua",
     image = BASE_URL .. "druid.png"
   }
@@ -42,45 +46,26 @@ local loading = false
 
 g_ui.loadUIFromString([[
 
-Pvp99ClassCard < Button
-  width: 104
-  height: 76
-  background-color: #2a241d
+Pvp99VocationCard < Button
+  width: 108
+  height: 82
+  background-color: #2b241f
   border-width: 1
-  border-color: #5e4a33
+  border-color: #5b4a35
 
   $hover:
-    background-color: #372d22
-    border-color: #d7ad61
+    background-color: #342a22
+    border-color: #d0a45b
 
   $pressed:
-    background-color: #473829
-    border-color: #f0ca74
-
-
-Pvp99CancelButton < Button
-  width: 88
-  height: 22
-  background-color: #35291f
-  border-width: 1
-  border-color: #786046
-  color: #e1d2b3
-  font: verdana-11px-rounded
-
-  $hover:
-    background-color: #493726
-    border-color: #d7ad61
-    color: #fff1cb
-
-  $pressed:
-    background-color: #281f18
-    border-color: #f0ca74
+    background-color: #3b2f25
+    border-color: #f2c676
 
 
 Pvp99VocationWindow < MainWindow
   id: pvp99VocationWindow
   text: PVP99
-  size: 256 292
+  size: 270 338
   @onEscape: self:hide()
 
   Label
@@ -88,22 +73,21 @@ Pvp99VocationWindow < MainWindow
     text: ESCOLHA SUA VOCACAO
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 4
-    color: #e3b96a
+    margin-top: 5
+    color: #f0c36d
     font: verdana-11px-rounded
 
   Label
     id: subtitle
-    text: Selecione
+    text: Selecione sua classe
     anchors.top: title.bottom
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 2
-    color: #d8ccb4
+    color: #d9d0c2
     font: verdana-11px-rounded
 
 
-  -- KNIGHT
-  Pvp99ClassCard
+  Pvp99VocationCard
     id: knightButton
     anchors.top: subtitle.bottom
     anchors.left: parent.left
@@ -115,8 +99,7 @@ Pvp99VocationWindow < MainWindow
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 2
-      size: 42 38
-      opacity: 0.85
+      size: 46 40
       phantom: true
 
     Label
@@ -124,18 +107,18 @@ Pvp99VocationWindow < MainWindow
       text: KNIGHT
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 16
+      margin-bottom: 15
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
 
     Label
-      id: knightAction
-      text: Selecionar
+      id: knightDesc
+      text: Tanque
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       margin-bottom: 3
-      color: #cbb38a
+      color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
 
@@ -146,13 +129,13 @@ Pvp99VocationWindow < MainWindow
       anchors.right: parent.right
       margin-top: 2
       margin-right: 4
-      color: #7cff8c
+      color: #74ff8b
+      font: verdana-11px-rounded
       visible: false
       phantom: true
 
 
-  -- MONK
-  Pvp99ClassCard
+  Pvp99VocationCard
     id: monkButton
     anchors.top: subtitle.bottom
     anchors.right: parent.right
@@ -164,8 +147,7 @@ Pvp99VocationWindow < MainWindow
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 2
-      size: 42 38
-      opacity: 0.85
+      size: 46 40
       phantom: true
 
     Label
@@ -173,18 +155,18 @@ Pvp99VocationWindow < MainWindow
       text: MONK
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 16
+      margin-bottom: 15
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
 
     Label
-      id: monkAction
-      text: Selecionar
+      id: monkDesc
+      text: Combo
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       margin-bottom: 3
-      color: #cbb38a
+      color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
 
@@ -195,13 +177,13 @@ Pvp99VocationWindow < MainWindow
       anchors.right: parent.right
       margin-top: 2
       margin-right: 4
-      color: #7cff8c
+      color: #74ff8b
+      font: verdana-11px-rounded
       visible: false
       phantom: true
 
 
-  -- PALADIN
-  Pvp99ClassCard
+  Pvp99VocationCard
     id: paladinButton
     anchors.top: knightButton.bottom
     anchors.left: parent.left
@@ -213,8 +195,7 @@ Pvp99VocationWindow < MainWindow
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 2
-      size: 42 38
-      opacity: 0.85
+      size: 46 40
       phantom: true
 
     Label
@@ -222,18 +203,18 @@ Pvp99VocationWindow < MainWindow
       text: PALADIN
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 16
+      margin-bottom: 15
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
 
     Label
-      id: paladinAction
-      text: Selecionar
+      id: paladinDesc
+      text: Distancia
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       margin-bottom: 3
-      color: #cbb38a
+      color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
 
@@ -244,13 +225,13 @@ Pvp99VocationWindow < MainWindow
       anchors.right: parent.right
       margin-top: 2
       margin-right: 4
-      color: #7cff8c
+      color: #74ff8b
+      font: verdana-11px-rounded
       visible: false
       phantom: true
 
 
-  -- SORCERER
-  Pvp99ClassCard
+  Pvp99VocationCard
     id: sorcererButton
     anchors.top: monkButton.bottom
     anchors.right: parent.right
@@ -262,8 +243,7 @@ Pvp99VocationWindow < MainWindow
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 2
-      size: 42 38
-      opacity: 0.85
+      size: 46 40
       phantom: true
 
     Label
@@ -271,18 +251,18 @@ Pvp99VocationWindow < MainWindow
       text: SORCERER
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 16
+      margin-bottom: 15
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
 
     Label
-      id: sorcererAction
-      text: Selecionar
+      id: sorcererDesc
+      text: Magia
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       margin-bottom: 3
-      color: #cbb38a
+      color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
 
@@ -293,13 +273,13 @@ Pvp99VocationWindow < MainWindow
       anchors.right: parent.right
       margin-top: 2
       margin-right: 4
-      color: #7cff8c
+      color: #74ff8b
+      font: verdana-11px-rounded
       visible: false
       phantom: true
 
 
-  -- DRUID
-  Pvp99ClassCard
+  Pvp99VocationCard
     id: druidButton
     anchors.top: paladinButton.bottom
     anchors.horizontalCenter: parent.horizontalCenter
@@ -310,8 +290,7 @@ Pvp99VocationWindow < MainWindow
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 2
-      size: 42 38
-      opacity: 0.85
+      size: 46 40
       phantom: true
 
     Label
@@ -319,18 +298,18 @@ Pvp99VocationWindow < MainWindow
       text: DRUID
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 16
+      margin-bottom: 15
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
 
     Label
-      id: druidAction
-      text: Selecionar
+      id: druidDesc
+      text: Suporte
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       margin-bottom: 3
-      color: #cbb38a
+      color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
 
@@ -341,14 +320,17 @@ Pvp99VocationWindow < MainWindow
       anchors.right: parent.right
       margin-top: 2
       margin-right: 4
-      color: #7cff8c
+      color: #74ff8b
+      font: verdana-11px-rounded
       visible: false
       phantom: true
 
 
-  Pvp99CancelButton
+  Button
     id: cancelButton
     text: CANCELAR
+    width: 92
+    height: 22
     anchors.top: druidButton.bottom
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 8
@@ -392,9 +374,7 @@ local checks = {
 local subtitle = window:recursiveGetChildById("subtitle")
 
 local function loadRemoteImage(widget, url)
-  if not widget or not url then
-    return
-  end
+  if not widget or not url then return end
 
   HTTP.downloadImage(url, function(path, err)
     if err then
@@ -402,9 +382,7 @@ local function loadRemoteImage(widget, url)
       return
     end
 
-    if not path then
-      return
-    end
+    if not path then return end
 
     if widget then
       widget:setImageSource(path)
@@ -419,24 +397,6 @@ for key, data in pairs(VOCATIONS) do
   loadRemoteImage(images[key], data.image)
 end
 
-local function setImageOpacity(widget, value)
-  if widget and widget.setOpacity then
-    widget:setOpacity(value)
-  end
-end
-
-for key, button in pairs(buttons) do
-  local img = images[key]
-
-  button.onHoverChange = function(widget, hovered)
-    if hovered then
-      setImageOpacity(img, 1.0)
-    else
-      setImageOpacity(img, 0.85)
-    end
-  end
-end
-
 local function clearChecks()
   for _, check in pairs(checks) do
     if check then
@@ -447,27 +407,22 @@ end
 
 local function selectVocation(key)
   clearChecks()
-
   if checks[key] then
     checks[key]:show()
   end
-
-  subtitle:setText("Ativado")
-  subtitle:setColor("#8ff09c")
 end
 
 local function loadVocation(key)
-  if loading then
-    return
-  end
+  if loading then return end
 
   local data = VOCATIONS[key]
-  if not data then
-    return
-  end
+  if not data then return end
 
   loading = true
   selectVocation(key)
+
+  subtitle:setText("Carregando " .. data.name .. "...")
+  subtitle:setColor("#f0d8a0")
 
   HTTP.get(BASE_URL .. data.file, function(script)
     loading = false
@@ -476,6 +431,7 @@ local function loadVocation(key)
       clearChecks()
       subtitle:setText("Falha ao carregar")
       subtitle:setColor("#ff6b6b")
+      print("[PVP99] Falha ao baixar " .. data.name)
       return
     end
 
@@ -484,7 +440,7 @@ local function loadVocation(key)
       clearChecks()
       subtitle:setText("Erro no macro")
       subtitle:setColor("#ff6b6b")
-      print("[PVP99] " .. tostring(err))
+      print("[PVP99] Erro no " .. data.name .. ": " .. tostring(err))
       return
     end
 
@@ -493,9 +449,12 @@ local function loadVocation(key)
       clearChecks()
       subtitle:setText("Erro ao executar")
       subtitle:setColor("#ff6b6b")
-      print("[PVP99] " .. tostring(runError))
+      print("[PVP99] Erro executando " .. data.name .. ": " .. tostring(runError))
       return
     end
+
+    subtitle:setText(data.name .. " carregado")
+    subtitle:setColor("#8dff9c")
 
     schedule(350, function()
       if window then
