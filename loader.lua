@@ -66,7 +66,7 @@ Pvp99VocationWindow < MainWindow
 
   Label
     id: title
-    text: ESCOLHA SEU
+    text: ESCOLHA O
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 5
