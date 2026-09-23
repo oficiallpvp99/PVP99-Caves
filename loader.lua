@@ -50,8 +50,8 @@ Pvp99VocationCard < Button
   border-color: #5b4a35
 
   $hover:
-    background-color: #362c22
-    border-color: #d7ad61
+    background-color: #2b241f
+    border-color: #5b4a35
 
   $pressed:
     background-color: #433428
@@ -59,8 +59,8 @@ Pvp99VocationCard < Button
 
 
 Pvp99CancelButton < Button
-  width: 96
-  height: 23
+  width: 74
+  height: 18
   background-color: #35291f
   border-width: 1
   border-color: #765f45
@@ -80,7 +80,7 @@ Pvp99CancelButton < Button
 Pvp99VocationWindow < MainWindow
   id: pvp99VocationWindow
   text: PVP99
-  size: 278 314
+  size: 278 346
   @onEscape: self:hide()
 
   Label
@@ -128,20 +128,8 @@ Pvp99VocationWindow < MainWindow
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 17
+      margin-bottom: 7
       color: #ffffff
-      font: verdana-11px-rounded
-      phantom: true
-
-    Label
-      id: knightDesc
-      text: Selecionar
-      width: 112
-      text-align: center
-      anchors.bottom: parent.bottom
-      anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 3
-      color: #d1b17d
       font: verdana-11px-rounded
       phantom: true
 
@@ -180,20 +168,8 @@ Pvp99VocationWindow < MainWindow
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 17
+      margin-bottom: 7
       color: #ffffff
-      font: verdana-11px-rounded
-      phantom: true
-
-    Label
-      id: monkDesc
-      text: Selecionar
-      width: 112
-      text-align: center
-      anchors.bottom: parent.bottom
-      anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 3
-      color: #d1b17d
       font: verdana-11px-rounded
       phantom: true
 
@@ -232,20 +208,8 @@ Pvp99VocationWindow < MainWindow
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 17
+      margin-bottom: 7
       color: #ffffff
-      font: verdana-11px-rounded
-      phantom: true
-
-    Label
-      id: paladinDesc
-      text: Selecionar
-      width: 112
-      text-align: center
-      anchors.bottom: parent.bottom
-      anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 3
-      color: #d1b17d
       font: verdana-11px-rounded
       phantom: true
 
@@ -284,20 +248,8 @@ Pvp99VocationWindow < MainWindow
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 17
+      margin-bottom: 7
       color: #ffffff
-      font: verdana-11px-rounded
-      phantom: true
-
-    Label
-      id: sorcererDesc
-      text: Selecionar
-      width: 112
-      text-align: center
-      anchors.bottom: parent.bottom
-      anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 3
-      color: #d1b17d
       font: verdana-11px-rounded
       phantom: true
 
@@ -335,20 +287,8 @@ Pvp99VocationWindow < MainWindow
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 17
+      margin-bottom: 7
       color: #ffffff
-      font: verdana-11px-rounded
-      phantom: true
-
-    Label
-      id: druidDesc
-      text: Selecionar
-      width: 112
-      text-align: center
-      anchors.bottom: parent.bottom
-      anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 3
-      color: #d1b17d
       font: verdana-11px-rounded
       phantom: true
 
@@ -368,9 +308,9 @@ Pvp99VocationWindow < MainWindow
   Pvp99CancelButton
     id: cancelButton
     text: CANCELAR
-    anchors.top: druidButton.bottom
+    anchors.bottom: parent.bottom
     anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 8
+    margin-bottom: 5
 
 ]])
 
@@ -408,6 +348,15 @@ local checks = {
   druid = window:recursiveGetChildById("druidCheck")
 }
 
+local names = {
+  knight = window:recursiveGetChildById("knightName"),
+  monk = window:recursiveGetChildById("monkName"),
+  paladin = window:recursiveGetChildById("paladinName"),
+  sorcerer = window:recursiveGetChildById("sorcererName"),
+  druid = window:recursiveGetChildById("druidName")
+}
+
+local title = window:recursiveGetChildById("title")
 local subtitle = window:recursiveGetChildById("subtitle")
 
 local function loadRemoteImage(widget, url)
@@ -435,6 +384,27 @@ for key, data in pairs(VOCATIONS) do
   loadRemoteImage(images[key], data.image)
 end
 
+-- ============================================================
+-- HOVER: BRILHO SOMENTE NO NOME DA VOCACAO
+-- ============================================================
+
+local function setNameHighlight(key, hovered)
+  local nameWidget = names[key]
+  if not nameWidget then return end
+
+  if hovered then
+    nameWidget:setColor("#ffd46e")
+  else
+    nameWidget:setColor("#ffffff")
+  end
+end
+
+for key, button in pairs(buttons) do
+  button.onHoverChange = function(widget, hovered)
+    setNameHighlight(key, hovered)
+  end
+end
+
 local function clearChecks()
   for _, check in pairs(checks) do
     if check then
@@ -458,18 +428,20 @@ local function loadVocation(key)
   if not data then return end
 
   loading = true
-  selectVocation(key)
+  clearChecks()
 
-  subtitle:setText("Ativando...")
-  subtitle:setColor("#f0d8a0")
+  title:setText("ATIVANDO...")
+  title:setColor("#f0d8a0")
+  subtitle:hide()
 
   HTTP.get(BASE_URL .. data.file, function(script)
     loading = false
 
     if not script or script == "" then
       clearChecks()
-      subtitle:setText("Falha ao carregar")
-      subtitle:setColor("#ff6b6b")
+      title:setText("ERRO NO MACRO")
+      title:setColor("#ff6b6b")
+      subtitle:hide()
       print("[PVP99] Falha ao baixar " .. data.name)
       return
     end
@@ -478,8 +450,9 @@ local function loadVocation(key)
 
     if not func then
       clearChecks()
-      subtitle:setText("Erro no macro")
-      subtitle:setColor("#ff6b6b")
+      title:setText("ERRO NO MACRO")
+      title:setColor("#ff6b6b")
+      subtitle:hide()
       print("[PVP99] Erro no " .. data.name .. ": " .. tostring(err))
       return
     end
@@ -488,16 +461,19 @@ local function loadVocation(key)
 
     if not ok then
       clearChecks()
-      subtitle:setText("Erro ao executar")
-      subtitle:setColor("#ff6b6b")
+      title:setText("ERRO NO MACRO")
+      title:setColor("#ff6b6b")
+      subtitle:hide()
       print("[PVP99] Erro executando " .. data.name .. ": " .. tostring(runError))
       return
     end
 
-    subtitle:setText("ATIVADO")
-    subtitle:setColor("#8dff9c")
+    clearChecks()
+    title:setText("MACRO ATIVADO")
+    title:setColor("#8dff9c")
+    subtitle:hide()
 
-    schedule(650, function()
+    schedule(850, function()
       if window then
         window:hide()
       end
@@ -511,8 +487,15 @@ buttons.paladin.onClick = function() loadVocation("paladin") end
 buttons.sorcerer.onClick = function() loadVocation("sorcerer") end
 buttons.druid.onClick = function() loadVocation("druid") end
 
-window:recursiveGetChildById("cancelButton").onClick = function()
-  window:hide()
+local cancelButton = window:recursiveGetChildById("cancelButton")
+
+if cancelButton then
+  cancelButton.onClick = function()
+    if window then
+      window:destroy()
+      window = nil
+    end
+  end
 end
 
 window:show()
