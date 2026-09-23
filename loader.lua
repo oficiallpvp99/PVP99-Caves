@@ -8,31 +8,31 @@ local BASE_URL =
 
 local VOCATIONS = {
   knight = {
-    name = "KNIGHT",
+    name = "EK",
     file = "knight.lua",
     image = BASE_URL .. "knight.png"
   },
 
   monk = {
-    name = "MONK",
+    name = "EM",
     file = "monk.lua",
     image = BASE_URL .. "monk.png?v=2"
   },
 
   paladin = {
-    name = "PALADIN",
+    name = "RP",
     file = "paladin.lua",
     image = BASE_URL .. "paladin.png"
   },
 
   sorcerer = {
-    name = "SORCERER",
+    name = "MS",
     file = "sorcerer.lua",
     image = BASE_URL .. "sorcerer.png"
   },
 
   druid = {
-    name = "DRUID",
+    name = "ED",
     file = "druid.lua",
     image = BASE_URL .. "druid.png"
   }
