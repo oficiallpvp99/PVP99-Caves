@@ -1,6 +1,5 @@
 -- ============================================================
 -- PVP99 - SELETOR DE VOCACAO MEDIEVAL
--- AJUSTADO
 -- ============================================================
 
 local BASE_URL =
@@ -8,31 +7,36 @@ local BASE_URL =
 
 local VOCATIONS = {
   knight = {
-    name = "EK",
+    name = "KNIGHT",
+    desc = "Tanque",
     file = "knight.lua",
     image = BASE_URL .. "knight.png"
   },
 
   monk = {
-    name = "EM",
+    name = "MONK",
+    desc = "Combo",
     file = "monk.lua",
     image = BASE_URL .. "monk.png?v=2"
   },
 
   paladin = {
-    name = "RP",
+    name = "PALADIN",
+    desc = "Distancia",
     file = "paladin.lua",
     image = BASE_URL .. "paladin.png"
   },
 
   sorcerer = {
-    name = "MS",
+    name = "SORCERER",
+    desc = "Magia",
     file = "sorcerer.lua",
     image = BASE_URL .. "sorcerer.png"
   },
 
   druid = {
-    name = "ED",
+    name = "DRUID",
+    desc = "Suporte",
     file = "druid.lua",
     image = BASE_URL .. "druid.png"
   }
@@ -43,8 +47,8 @@ local loading = false
 g_ui.loadUIFromString([[
 
 Pvp99VocationCard < Button
-  width: 112
-  height: 84
+  width: 108
+  height: 82
   background-color: #2b241f
   border-width: 1
   border-color: #5b4a35
@@ -61,31 +65,21 @@ Pvp99VocationCard < Button
 Pvp99VocationWindow < MainWindow
   id: pvp99VocationWindow
   text: PVP99
-  size: 280 344
+  size: 270 338
   @onEscape: self:hide()
 
   Label
     id: title
-    text: ESCOLHA O
+    text: ESCOLHER VOCATION
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 5
     color: #f0c36d
     font: verdana-11px-rounded
 
-  Label
-    id: subtitle
-    text: macro
-    anchors.top: title.bottom
-    anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 2
-    color: #d9d0c2
-    font: verdana-11px-rounded
-
-
   Pvp99VocationCard
     id: knightButton
-    anchors.top: subtitle.bottom
+    anchors.top: title.bottom
     anchors.left: parent.left
     margin-top: 8
     margin-left: 12
@@ -103,7 +97,7 @@ Pvp99VocationWindow < MainWindow
       text: KNIGHT
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 18
+      margin-bottom: 15
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
@@ -113,7 +107,7 @@ Pvp99VocationWindow < MainWindow
       text: Selecionar
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 4
+      margin-bottom: 3
       color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
@@ -133,7 +127,7 @@ Pvp99VocationWindow < MainWindow
 
   Pvp99VocationCard
     id: monkButton
-    anchors.top: subtitle.bottom
+    anchors.top: title.bottom
     anchors.right: parent.right
     margin-top: 8
     margin-right: 12
@@ -151,7 +145,7 @@ Pvp99VocationWindow < MainWindow
       text: MONK
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 18
+      margin-bottom: 15
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
@@ -161,7 +155,7 @@ Pvp99VocationWindow < MainWindow
       text: Selecionar
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 4
+      margin-bottom: 3
       color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
@@ -199,7 +193,7 @@ Pvp99VocationWindow < MainWindow
       text: PALADIN
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 18
+      margin-bottom: 15
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
@@ -209,7 +203,7 @@ Pvp99VocationWindow < MainWindow
       text: Selecionar
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 4
+      margin-bottom: 3
       color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
@@ -247,7 +241,7 @@ Pvp99VocationWindow < MainWindow
       text: SORCERER
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 18
+      margin-bottom: 15
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
@@ -257,7 +251,7 @@ Pvp99VocationWindow < MainWindow
       text: Selecionar
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 4
+      margin-bottom: 3
       color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
@@ -294,7 +288,7 @@ Pvp99VocationWindow < MainWindow
       text: DRUID
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 18
+      margin-bottom: 15
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
@@ -304,7 +298,7 @@ Pvp99VocationWindow < MainWindow
       text: Selecionar
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 4
+      margin-bottom: 3
       color: #c7ab7a
       font: verdana-11px-rounded
       phantom: true
@@ -367,8 +361,6 @@ local checks = {
   druid = window:recursiveGetChildById("druidCheck")
 }
 
-local subtitle = window:recursiveGetChildById("subtitle")
-
 local function loadRemoteImage(widget, url)
   if not widget or not url then return end
 
@@ -403,13 +395,9 @@ end
 
 local function selectVocation(key)
   clearChecks()
-
   if checks[key] then
     checks[key]:show()
   end
-
-  subtitle:setText("Ativado")
-  subtitle:setColor("#8dff9c")
 end
 
 local function loadVocation(key)
@@ -426,8 +414,6 @@ local function loadVocation(key)
 
     if not script or script == "" then
       clearChecks()
-      subtitle:setText("Falha ao carregar")
-      subtitle:setColor("#ff6b6b")
       print("[PVP99] Falha ao baixar " .. data.name)
       return
     end
@@ -435,8 +421,6 @@ local function loadVocation(key)
     local func, err = loadstring(script)
     if not func then
       clearChecks()
-      subtitle:setText("Erro no macro")
-      subtitle:setColor("#ff6b6b")
       print("[PVP99] Erro no " .. data.name .. ": " .. tostring(err))
       return
     end
@@ -444,8 +428,6 @@ local function loadVocation(key)
     local ok, runError = pcall(func)
     if not ok then
       clearChecks()
-      subtitle:setText("Erro ao executar")
-      subtitle:setColor("#ff6b6b")
       print("[PVP99] Erro executando " .. data.name .. ": " .. tostring(runError))
       return
     end
