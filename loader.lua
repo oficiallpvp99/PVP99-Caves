@@ -66,7 +66,7 @@ Pvp99VocationWindow < MainWindow
 
   Label
     id: title
-    text: ESCOLHA SUA VOCACAO
+    text: ESCOLHA SEU
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 5
@@ -75,7 +75,7 @@ Pvp99VocationWindow < MainWindow
 
   Label
     id: subtitle
-    text: Selecione
+    text: macro
     anchors.top: title.bottom
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 2
