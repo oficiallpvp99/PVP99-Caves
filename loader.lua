@@ -43,8 +43,8 @@ local loading = false
 g_ui.loadUIFromString([[
 
 Pvp99VocationCard < Button
-  width: 118
-  height: 86
+  width: 114
+  height: 76
   background-color: #2b241f
   border-width: 1
   border-color: #5b4a35
@@ -80,13 +80,13 @@ Pvp99CancelButton < Button
 Pvp99VocationWindow < MainWindow
   id: pvp99VocationWindow
   text: PVP99
-  size: 286 338
+  size: 278 314
   @onEscape: self:hide()
 
   Label
     id: title
     text: ESCOLHER VOCATION
-    width: 230
+    width: 250
     text-align: center
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
@@ -97,7 +97,7 @@ Pvp99VocationWindow < MainWindow
   Label
     id: subtitle
     text: Selecione
-    width: 230
+    width: 250
     text-align: center
     anchors.top: title.bottom
     anchors.horizontalCenter: parent.horizontalCenter
@@ -111,24 +111,24 @@ Pvp99VocationWindow < MainWindow
     anchors.top: subtitle.bottom
     anchors.left: parent.left
     margin-top: 8
-    margin-left: 14
+    margin-left: 13
 
     Label
       id: knightImage
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 3
-      size: 48 42
+      size: 42 36
       phantom: true
 
     Label
       id: knightName
       text: KNIGHT
-      width: 104
+      width: 112
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 19
+      margin-bottom: 17
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
@@ -136,11 +136,11 @@ Pvp99VocationWindow < MainWindow
     Label
       id: knightDesc
       text: Selecionar
-      width: 104
+      width: 112
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 4
+      margin-bottom: 3
       color: #d1b17d
       font: verdana-11px-rounded
       phantom: true
@@ -163,24 +163,24 @@ Pvp99VocationWindow < MainWindow
     anchors.top: subtitle.bottom
     anchors.right: parent.right
     margin-top: 8
-    margin-right: 14
+    margin-right: 13
 
     Label
       id: monkImage
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 3
-      size: 48 42
+      size: 42 36
       phantom: true
 
     Label
       id: monkName
       text: MONK
-      width: 104
+      width: 112
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 19
+      margin-bottom: 17
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
@@ -188,11 +188,11 @@ Pvp99VocationWindow < MainWindow
     Label
       id: monkDesc
       text: Selecionar
-      width: 104
+      width: 112
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 4
+      margin-bottom: 3
       color: #d1b17d
       font: verdana-11px-rounded
       phantom: true
@@ -214,25 +214,25 @@ Pvp99VocationWindow < MainWindow
     id: paladinButton
     anchors.top: knightButton.bottom
     anchors.left: parent.left
-    margin-top: 7
-    margin-left: 14
+    margin-top: 5
+    margin-left: 13
 
     Label
       id: paladinImage
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 3
-      size: 48 42
+      size: 42 36
       phantom: true
 
     Label
       id: paladinName
       text: PALADIN
-      width: 104
+      width: 112
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 19
+      margin-bottom: 17
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
@@ -240,11 +240,11 @@ Pvp99VocationWindow < MainWindow
     Label
       id: paladinDesc
       text: Selecionar
-      width: 104
+      width: 112
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 4
+      margin-bottom: 3
       color: #d1b17d
       font: verdana-11px-rounded
       phantom: true
@@ -266,25 +266,25 @@ Pvp99VocationWindow < MainWindow
     id: sorcererButton
     anchors.top: monkButton.bottom
     anchors.right: parent.right
-    margin-top: 7
-    margin-right: 14
+    margin-top: 5
+    margin-right: 13
 
     Label
       id: sorcererImage
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 3
-      size: 48 42
+      size: 42 36
       phantom: true
 
     Label
       id: sorcererName
       text: SORCERER
-      width: 104
+      width: 112
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 19
+      margin-bottom: 17
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
@@ -292,11 +292,11 @@ Pvp99VocationWindow < MainWindow
     Label
       id: sorcererDesc
       text: Selecionar
-      width: 104
+      width: 112
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 4
+      margin-bottom: 3
       color: #d1b17d
       font: verdana-11px-rounded
       phantom: true
@@ -318,24 +318,24 @@ Pvp99VocationWindow < MainWindow
     id: druidButton
     anchors.top: paladinButton.bottom
     anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 7
+    margin-top: 5
 
     Label
       id: druidImage
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 3
-      size: 48 42
+      size: 42 36
       phantom: true
 
     Label
       id: druidName
       text: DRUID
-      width: 104
+      width: 112
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 19
+      margin-bottom: 17
       color: #ffffff
       font: verdana-11px-rounded
       phantom: true
@@ -343,11 +343,11 @@ Pvp99VocationWindow < MainWindow
     Label
       id: druidDesc
       text: Selecionar
-      width: 104
+      width: 112
       text-align: center
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-bottom: 4
+      margin-bottom: 3
       color: #d1b17d
       font: verdana-11px-rounded
       phantom: true
