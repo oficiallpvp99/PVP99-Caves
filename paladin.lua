@@ -11,140 +11,254 @@ addIcon("Co", {item=3003, text="ropa",}, function(icon, isOn)
   corda.setOn(isOn) 
 end)
 
-local function hideAllIcon()
-  for i, child in ipairs(modules.game_interface.gameMapPanel:getChildren()) do
-    if child:getStyleName() == "BotIcon" then
-      if icon then
-        child:hide()
-      else
-        child:show()
+UI.Label("Stack")
+
+local STACK_DELAY = 100 -- velocidade do macro
+local MAX_STACK = 100
+
+macro(STACK_DELAY, "Stack items", function()
+
+  local containers = g_game.getContainers()
+  local stacks = {}
+
+  -- 1. Mapeia todos os itens stackáveis
+  for _, container in pairs(containers) do
+
+    -- Ignora loot containers de monstros
+    if not container.lootContainer then
+
+      local items = container:getItems()
+
+      for slot, item in ipairs(items) do
+
+        if item:isStackable() and item:getCount() < MAX_STACK then
+
+          local id = item:getId()
+
+          if not stacks[id] then
+            stacks[id] = {}
+          end
+
+          table.insert(stacks[id], {
+            item = item,
+            count = item:getCount(),
+            position = container:getSlotPosition(slot - 1)
+          })
+
+        end
       end
     end
   end
-end
 
-hotkey("F2", "Esconder Iconos", function() 
-  icon = not icon
-  hideAllIcon()
+  -- 2. Procura itens iguais que podem ser unidos
+  for id, itemList in pairs(stacks) do
+
+    if #itemList >= 2 then
+
+      -- Deixa as pilhas mais cheias primeiro
+      table.sort(itemList, function(a, b)
+        return a.count > b.count
+      end)
+
+      -- Destino = pilha mais cheia
+      local destination = itemList[1]
+
+      -- Procura uma pilha para completar o destino
+      for i = 2, #itemList do
+
+        local source = itemList[i]
+
+        if destination.count < MAX_STACK and source.count > 0 then
+
+          local missing = MAX_STACK - destination.count
+          local amount = math.min(missing, source.count)
+
+          if amount > 0 then
+            g_game.move(
+              source.item,
+              destination.position,
+              amount
+            )
+
+            return
+          end
+        end
+      end
+    end
+  end
 end)
 
+local ms = 0 -- Garante que a variável existe antes do primeiro uso
 
-local npcCities = {
-  ['King Tibianus'] = {'promotion'},
-  ['Stutchs'] = {'Ab\'Dendriel'}
+local healingSpells = {
+  -- HP máximo para usar / mana mínima recomendada
+  {spell = "exura gran san", hp = 65, mana = 20},
+  {spell = "exura san",      hp = 82, mana = 12},
+  {spell = "exura",          hp = 96, mana = 5}
 }
 
-local npcs = {
-  'King Tibianus',
-  'Stutchs'
-}
+local EMERGENCY_HP = 45
 
+local curaru = macro(250, "Paladin Heal V2", function()
+  local hp = hppercent()
+  local mana = manapercent()
 
--- Interfaz de usuario
-g_ui.loadUIFromString([[
-CityTravelWindow < MainWindow
-  text: By Pvp99
-  size: 110 70
-
-  ComboBox
-    id: travelOptions
-    anchors.horizontalCenter: parent.horizontalCenter
-    anchors.top: parent.top
-    margin-top: 1
-    width: 80
-    height: 20
-
-  HorizontalSeparator
-    id: separator
-    anchors.horizontalCenter: parent.horizontalCenter
-    anchors.top: travelOptions.bottom
-    margin-top: 5
-
-]])
-
-local panelName = "cityTravel"
-if not storage[panelName] then
-  storage[panelName] = {
-    enabled = false,
-  }
-end
-
-local config = storage[panelName]
-
-rootWidget = g_ui.getRootWidget()
-if rootWidget then
-  local cityTravelWindow = UI.createWindow('CityTravelWindow', rootWidget)
-  cityTravelWindow:hide()
-
-  for _, npcName in ipairs(npcs) do
-    NPC[npcName] = function(text)
-        if g_game.getClientVersion() >= 810 then
-            g_game.talkChannel(11, 0, text)
-        else
-            return say(text)
-        end
-    end
+  -- Emergência: prioriza a cura mais forte
+  if hp <= EMERGENCY_HP then
+    say("exura gran san")
+    return
   end
 
-  local function updateTravelOptions(npcName)
-    cityTravelWindow:recursiveGetChildById('travelOptions'):clearOptions()
-    cityTravelWindow:recursiveGetChildById('travelOptions'):addOption("Comprar")
-    if npcCities[npcName] then
-      for _, city in ipairs(npcCities[npcName]) do
-        cityTravelWindow:recursiveGetChildById('travelOptions'):addOption(city)
-      end
+  -- Cura inteligente por faixa de HP
+  for _, heal in ipairs(healingSpells) do
+    if hp <= heal.hp and mana >= heal.mana then
+      say(heal.spell)
+      return
     end
   end
+end)
 
-  macro(100, function()
-    for _, npcName in ipairs(npcs) do
-      local findNpc = getCreatureByName(npcName)
-      local playerPos = pos()
-      if findNpc and getDistanceBetween(playerPos, findNpc:getPosition()) <= 2 then
-        updateTravelOptions(npcName)
-        cityTravelWindow:show()
-        break
-      else
-        cityTravelWindow:hide()
-      end
-    end
-  end)
+addIcon("CUR", {
+  item = 12809,
+  text = "real"
+}, function(icon, isOn)
+  curaru.setOn(isOn)
+end)
 
-  cityTravelWindow:recursiveGetChildById('travelOptions').onOptionChange = function(widget, option, data)
-    if option ~= "Comprar" then
-      NPC.say('hail king')
-      schedule(200, function()  -- 2 seconds delay
-        for _, npcName in ipairs(npcs) do
-          local findNpc = getCreatureByName(npcName)
-          if findNpc and getDistanceBetween(pos(), findNpc:getPosition()) <= 2 then
-            NPC[npcName](option)
-          end
-        end
-      end)
-      schedule(500, function()  -- 4 seconds delay from the start (2 seconds after the previous command)
-        for _, npcName in ipairs(npcs) do
-          local findNpc = getCreatureByName(npcName)
-          if findNpc and getDistanceBetween(pos(), findNpc:getPosition()) <= 2 then
-            NPC[npcName]('yes')
-          end
-        end
-      end)
-    end
+-- =========================================================
+-- CAVE BOT + TARGET BOT ICONS
+-- =========================================================
+
+local CAVE_ICON_ITEM   = 16770 -- troque pelo ID do item que quiser
+local TARGET_ICON_ITEM = 50158 -- troque pelo ID do item que quiser
+
+-- =========================================================
+-- CAVE BOT
+-- =========================================================
+
+local cIcon = addIcon("cI", {
+  item = CAVE_ICON_ITEM,
+  text = "CAVE",
+  switchable = false,
+  moveable = true
+}, function()
+
+  if CaveBot.isOff() then
+    CaveBot.setOn()
+  else
+    CaveBot.setOff()
   end
-end
 
---========================================================--
---                 PVP99 - NPC SYSTEM
---      Banco + Viagem + Trade em um único macro
---========================================================--
+end)
+
+cIcon:setSize({
+  height = 50,
+  width = 60
+})
+
+cIcon.text:setFont("verdana-11px-rounded")
+
+
+-- =========================================================
+-- TARGET BOT
+-- =========================================================
+
+local tIcon = addIcon("tI", {
+  item = TARGET_ICON_ITEM,
+  text = "TARGET",
+  switchable = false,
+  moveable = true
+}, function()
+
+  if TargetBot.isOff() then
+    TargetBot.setOn()
+  else
+    TargetBot.setOff()
+  end
+
+end)
+
+tIcon:setSize({
+  height = 50,
+  width = 60
+})
+
+tIcon.text:setFont("verdana-11px-rounded")
+
+
+-- =========================================================
+-- ATUALIZAÇÃO VISUAL
+-- =========================================================
+
+macro(100, function()
+
+  -- CAVE BOT
+  if CaveBot.isOn() then
+
+    cIcon.text:setColoredText({
+      "cave\n", "yellow",
+      "on", "green"
+    })
+
+  else
+
+    cIcon.text:setColoredText({
+      "cave\n", "yellow",
+      "off", "red"
+    })
+
+  end
+
+
+  -- TARGET BOT
+  if TargetBot.isOn() then
+
+    tIcon.text:setColoredText({
+      "target\n", "yellow",
+      "on", "green"
+    })
+
+  else
+
+    tIcon.text:setColoredText({
+      "target\n", "yellow",
+      "off", "red"
+    })
+
+  end
+
+end)
+
+local countMP = addIcon("HP", {text="HP", item = 23374}, 
+function(widget,isOn)
+   local id =  23374
+   local contar = macro(1000,function() 
+      local countItem = itemAmount(id)
+      widget.text:setText(countItem.."\n")
+      widget.text:setColor("green")
+   end)
+   contar:setOn()
+end)
+
+local countMP = addIcon("MP", {text="MP", item = 53164}, 
+function(widget,isOn)
+   local id = 53164
+   local contar = macro(1000,function() 
+      local countItem = itemAmount(id)
+      widget.text:setText(countItem.."\n")
+      widget.text:setColor("green")
+   end)
+   contar:setOn()
+end)
+
+-- PVP99 - NPC SYSTEM V2 COMPLETO
+-- Banco + Viagem + Balsas + Tapetes + Trade + Serviços
+-- Base original preservada + NPCs oficiais adicionais do Tibia
+-- Detector rápido, alvo estável e sem janela/macro duplicado
 
 local npcGroups = {
 
-  --======================================================--
   -- BANCO
-  -- Sequência:
-  -- hi -> opção -> yes
-  --======================================================--
 
   Banco = {
     final = "yes",
@@ -155,17 +269,23 @@ local npcGroups = {
       ["Eva"] = {"deposit all"},
       ["Kepar"] = {"deposit all"},
 
+      ["Suzy"] = {"deposit all"},
+      ["Paulie"] = {"deposit all"},
+      ["Finarfin"] = {"deposit all"},
+      ["Atur"] = {"deposit all"},
+      ["Sissek"] = {"deposit all"},
+      ["Gerib"] = {"deposit all"},
+      ["Flavius"] = {"deposit all"},
+      ["Adrian"] = {"deposit all"},
+      ["Hector the Mentor"] = {"deposit all"},
+
       -- ADICIONE NOVOS NPCs DE BANCO AQUI
       -- ["Nome NPC"] = {"deposit all"},
     }
   },
 
 
-  --======================================================--
   -- VIAGENS
-  -- Sequência:
-  -- hi -> cidade -> yes
-  --======================================================--
 
   Cidades = {
     final = "yes",
@@ -477,17 +597,175 @@ local npcGroups = {
         "Venore"
       },
 
+      ["Stutchs"] = {"Ab'Dendriel"},
+
+
+      -- ===== CAPITÃES / ROTAS OFICIAIS ADICIONAIS =====
+
+      ["Anna"] = {
+        options = {"passage"},
+        final = "yes"
+      },
+
+      ["Captain Dreadnought"] = {
+        options = {"passage"},
+        final = false
+      },
+
+      ["Captain Indigo"] = {
+        "Thais"
+      },
+
+      ["Captain Jack"] = {
+        options = {"passage"},
+        final = "yes"
+      },
+
+      ["Captain Jack Rat"] = {
+        options = {"passage"},
+        final = false
+      },
+
+      ["Captain Kurt"] = {
+        options = {"passage"},
+        final = false
+      },
+
+      ["Captain Tiberius"] = {
+        options = {"passage"},
+        final = "yes"
+      },
+
+      ["Captain Waverider"] = {
+        options = {"peg leg"},
+        final = "yes"
+      },
+
+      ["Dalbrect"] = {
+        "Isle of the Kings"
+      },
+
+      ["Harlow"] = {
+        "Vengoth",
+        "Yalahar"
+      },
+
+      ["Hawkhurst"] = {
+        "Ingol"
+      },
+
+      ["Junkar"] = {
+        "Kazordoon",
+        "Thais",
+        "Eyes of the Deep",
+        "Underground Isle"
+      },
+
+      ["Kendra"] = {
+        "Vigintia",
+        "Thais"
+      },
+
+      ["Maris"] = {
+        "Yalahar",
+        "Fenrock",
+        "Mistrock"
+      },
+
+      ["Sebastian"] = {
+        "Liberty Bay",
+        "Nargor"
+      },
+
+      ["Urks The Mute"] = {
+        "Cormaya"
+      },
+
+      ["Zurak"] = {
+        "Chazorai"
+      },
+
+      -- ===== BALSAS =====
+
+      ["Buddel"] = {
+        "Tyrsung",
+        "Okolnir",
+        "Svargrond",
+        "Raider Camp",
+        "Helheim"
+      },
+
+      ["Anderson"] = {
+        "Carlin",
+        "Senja"
+      },
+
+      ["Carlson"] = {
+        "Carlin",
+        "Vega"
+      },
+
+      ["Cornell"] = {
+        "Edron",
+        "Grimvale"
+      },
+
+      ["Ferryman Kamil"] = {
+        "Fibula",
+        "Meluna"
+      },
+
+      ["Nielson"] = {
+        options = {"passage"},
+        final = false
+      },
+
+      ["Rascalio"] = {
+        "Banor's Eye",
+        "Fryclops Island",
+        "Meriana",
+        "Reokon's Tundra"
+      },
+
+      ["Svenson"] = {
+        "Carlin",
+        "Folda"
+      },
+
+      ["Tarak"] = {
+        "Yalahar",
+        "Monument Tower"
+      },
+
+      -- ===== TAPETE MÁGICO / TRANSPORTE AÉREO =====
+
+      ["Ziyad"] = {
+        "Darashia",
+        "Edron",
+        "Farmine",
+        "Femor Hills",
+        "Issavi",
+        "Kazordoon",
+        "Svargrond"
+      },
+
       -- ADICIONE NOVOS NPCs DE VIAGEM AQUI
       -- ["Novo Captain"] = {"Thais", "Carlin", "Venore"},
     }
   },
 
 
-  --======================================================--
   -- TRADE
-  -- Sequência:
-  -- hi -> opção -> trade
-  --======================================================--
+
+  Servicos = {
+    final = "yes",
+    npcs = {
+      ["King Tibianus"] = {
+        options = {"promotion"},
+        hello = "hail king"
+      }
+    }
+  },
 
   Trade = {
     final = "trade",
@@ -531,59 +809,92 @@ local npcGroups = {
       ["Julian"] = {"buy"},
       ["Rachel"] = {"buy/sell"},
 
+      -- COMERCIANTES ADICIONAIS (hi -> trade)
+      ["Alexander"] = {options = {"trade"}, final = false},
+      ["Asima"] = {options = {"trade"}, final = false},
+      ["Sandra"] = {options = {"trade"}, final = false},
+      ["Tandros"] = {options = {"trade"}, final = false},
+      ["Lily"] = {options = {"trade"}, final = false},
+      ["Nelly"] = {options = {"trade"}, final = false},
+      ["Faloriel"] = {options = {"trade"}, final = false},
+      ["Ghorza"] = {options = {"trade"}, final = false},
+      ["Nipuna"] = {options = {"trade"}, final = false},
+      ["Sundara"] = {options = {"trade"}, final = false},
+      ["Rock In A Hard Place"] = {options = {"trade"}, final = false},
+      ["Uzgod"] = {options = {"trade"}, final = false},
+      ["Shanar"] = {options = {"trade"}, final = false},
+      ["Morpel"] = {options = {"trade"}, final = false},
+      ["H.L."] = {options = {"trade"}, final = false},
+      ["Gamel"] = {options = {"trade"}, final = false},
+      ["Ulrik"] = {options = {"trade"}, final = false},
+      ["Flint"] = {options = {"trade"}, final = false},
+      ["Cedrik"] = {options = {"trade"}, final = false},
+      ["Dario"] = {options = {"trade"}, final = false},
+      ["Silas"] = {options = {"trade"}, final = false},
+      ["Vincent"] = {options = {"trade"}, final = false},
+      ["Willard"] = {options = {"trade"}, final = false},
+      ["Xed"] = {options = {"trade"}, final = false},
+      ["Aurelia"] = {options = {"trade"}, final = false},
+      ["Bertha"] = {options = {"trade"}, final = false},
+      ["Gnomally"] = {options = {"trade"}, final = false},
+      ["Timur"] = {options = {"trade"}, final = false},
+      ["Valentina"] = {options = {"trade"}, final = false},
+      ["Wes The Blacksmith"] = {options = {"trade"}, final = false},
+      ["Zora"] = {options = {"trade"}, final = false},
+      ["Black Bert"] = {options = {"trade"}, final = false},
+      ["Azil"] = {options = {"trade"}, final = false},
+      ["Rudolph"] = {options = {"trade"}, final = false},
+      ["Eliyas"] = {options = {"trade"}, final = false},
+      ["The Librarian"] = {options = {"trade"}, final = false},
+      ["Yonan"] = {options = {"trade"}, final = false},
+      ["Inkaef"] = {options = {"trade"}, final = false},
+      ["Avriel"] = {options = {"trade"}, final = false},
+
       -- ADICIONE NOVOS NPCs DE TRADE AQUI
       -- ["Novo NPC"] = {"buy/sell"},
     }
   }
 }
 
-
---========================================================--
--- NÃO PRECISA ALTERAR DAQUI PARA BAIXO
---========================================================--
-
 local NPC_DISTANCE = 2
-
+local DETECT_DELAY = 50
 local DELAY_OPTION = 200
 local DELAY_FINAL = 500
 local DELAY_RESET = 800
 
-
---========================================================--
--- CRIA ÍNDICE AUTOMÁTICO DOS NPCs
---========================================================--
-
+-- Índice único dos NPCs
 local npcIndex = {}
 
 for categoryName, category in pairs(npcGroups) do
-
   for npcName, npcData in pairs(category.npcs) do
-
     local options = npcData
     local finalCommand = category.final
+    local hello = "hi"
 
-    -- Permite configuração especial futuramente
     if npcData.options then
-
       options = npcData.options
 
       if npcData.final ~= nil then
         finalCommand = npcData.final
       end
+
+      if npcData.hello then
+        hello = npcData.hello
+      end
+    end
+
+    if type(options) ~= "table" then
+      options = {tostring(options)}
     end
 
     npcIndex[npcName] = {
       category = categoryName,
       options = options,
-      final = finalCommand
+      final = finalCommand,
+      hello = hello
     }
   end
 end
-
-
---========================================================--
--- INTERFACE
---========================================================--
 
 g_ui.loadUIFromString([[
 Pvp99NpcWindow < MainWindow
@@ -612,52 +923,26 @@ Pvp99NpcWindow < MainWindow
     margin-top: 5
 ]])
 
-
---========================================================--
--- FUNÇÕES
---========================================================--
-
 local rootWidget = g_ui.getRootWidget()
 
 if rootWidget then
-
-  local oldWindow =
-    rootWidget:recursiveGetChildById("pvp99NpcWindow")
-
+  local oldWindow = rootWidget:recursiveGetChildById("pvp99NpcWindow")
   if oldWindow then
     oldWindow:destroy()
   end
 
+  local npcWindow = UI.createWindow("Pvp99NpcWindow", rootWidget)
+  local combo = npcWindow:recursiveGetChildById("travelOptions")
+  local npcLabel = npcWindow:recursiveGetChildById("npcName")
 
-  local npcWindow =
-    UI.createWindow("Pvp99NpcWindow", rootWidget)
+  local currentNpc
+  local updatingOptions = false
+  local busy = false
 
   npcWindow:hide()
 
-
-  local combo =
-    npcWindow:recursiveGetChildById("travelOptions")
-
-  local npcLabel =
-    npcWindow:recursiveGetChildById("npcName")
-
-
-  local currentNpc = nil
-
-  local updatingOptions = false
-
-  local busy = false
-
-
-  --======================================================--
-  -- FALA NO CHANNEL DO NPC
-  --======================================================--
-
   local function npcSay(text)
-
-    if not text then
-      return
-    end
+    if not text then return end
 
     if g_game.getClientVersion() >= 810 then
       g_game.talkChannel(11, 0, text)
@@ -666,86 +951,40 @@ if rootWidget then
     end
   end
 
-
-  --======================================================--
-  -- VERIFICA SE NPC CONTINUA PERTO
-  --======================================================--
-
   local function npcIsNear(npcName)
-
-    local creature = getCreatureByName(npcName)
-
-    if not creature then
-      return false
-    end
-
-    local distance =
-      getDistanceBetween(
-        pos(),
-        creature:getPosition()
-      )
-
-    return distance <= NPC_DISTANCE
+    local creature = npcName and getCreatureByName(npcName)
+    return creature
+      and getDistanceBetween(pos(), creature:getPosition()) <= NPC_DISTANCE
   end
 
-
-  --======================================================--
-  -- PROCURA NPC MAIS PRÓXIMO
-  --======================================================--
-
   local function findNearbyNpc()
-
     local playerPos = pos()
+    local bestName
+    local bestDistance
 
-    local nearestNpc = nil
-    local nearestDistance = nil
-
-    for npcName, _ in pairs(npcIndex) do
-
-      local creature =
-        getCreatureByName(npcName)
+    for npcName in pairs(npcIndex) do
+      local creature = getCreatureByName(npcName)
 
       if creature then
+        local distance = getDistanceBetween(playerPos, creature:getPosition())
 
-        local distance =
-          getDistanceBetween(
-            playerPos,
-            creature:getPosition()
-          )
-
-        if distance <= NPC_DISTANCE then
-
-          if not nearestDistance or
-             distance < nearestDistance then
-
-            nearestNpc = npcName
-            nearestDistance = distance
-          end
+        if distance <= NPC_DISTANCE
+          and (not bestDistance or distance < bestDistance) then
+          bestName = npcName
+          bestDistance = distance
         end
       end
     end
 
-    return nearestNpc
+    return bestName
   end
 
-
-  --======================================================--
-  -- ATUALIZA COMBOBOX
-  --======================================================--
-
   local function updateNpcOptions(npcName)
-
-    local data =
-      npcIndex[npcName]
-
-    if not data then
-      return
-    end
+    local data = npcIndex[npcName]
+    if not data then return end
 
     updatingOptions = true
-
     combo:clearOptions()
-
     combo:addOption(data.category)
 
     for _, option in ipairs(data.options) do
@@ -753,455 +992,81 @@ if rootWidget then
     end
 
     npcLabel:setText(npcName)
-
     updatingOptions = false
   end
 
+  local function actionStillValid(npcName)
+    return currentNpc == npcName and npcIsNear(npcName)
+  end
 
-  --======================================================--
-  -- DETECTOR AUTOMÁTICO DE NPC
-  --======================================================--
-
-  macro(100, "PVP99 NPC", function()
-
+  macro(DETECT_DELAY, "PVP99 NPC", function()
+    -- Enquanto o mesmo NPC continuar perto, evita varrer a lista inteira.
     local npcName =
-      findNearbyNpc()
+      currentNpc and npcIsNear(currentNpc)
+      and currentNpc
+      or findNearbyNpc()
 
+    if not npcName then
+      currentNpc = nil
+      busy = false
 
-    -- Encontrou NPC
-    if npcName then
-
-      -- Mudou de NPC
-      if currentNpc ~= npcName then
-
-        currentNpc = npcName
-
-        busy = false
-
-        updateNpcOptions(npcName)
-
-        npcWindow:show()
-      else
-
-        if not npcWindow:isVisible() then
-          npcWindow:show()
-        end
+      if npcWindow:isVisible() then
+        npcWindow:hide()
       end
 
       return
     end
 
+    if currentNpc ~= npcName then
+      currentNpc = npcName
+      busy = false
+      updateNpcOptions(npcName)
+    end
 
-    -- Nenhum NPC próximo
-    currentNpc = nil
-
-    busy = false
-
-    npcWindow:hide()
+    if not npcWindow:isVisible() then
+      npcWindow:show()
+    end
   end)
 
+  combo.onOptionChange = function(widget, option, data)
+    if updatingOptions or busy or not currentNpc then
+      return
+    end
 
-  --======================================================--
-  -- QUANDO SELECIONAR UMA OPÇÃO
-  --======================================================--
+    local actionNpc = currentNpc
+    local actionData = npcIndex[actionNpc]
 
-  combo.onOptionChange =
-    function(widget, option, data)
+    if not actionData
+      or option == actionData.category
+      or not npcIsNear(actionNpc) then
+      return
+    end
 
+    busy = true
+    say(actionData.hello or "hi")
 
-      -- Evita disparar ao atualizar ComboBox
-      if updatingOptions then
-        return
+    schedule(DELAY_OPTION, function()
+      if actionStillValid(actionNpc) then
+        npcSay(option)
       end
-
-
-      if not currentNpc then
-        return
-      end
-
-
-      local npcData =
-        npcIndex[currentNpc]
-
-      if not npcData then
-        return
-      end
-
-
-      -- Ignora Banco / Cidades / Trade
-      if option == npcData.category then
-        return
-      end
-
-
-      -- Impede comandos simultâneos
-      if busy then
-        return
-      end
-
-
-      local actionNpc =
-        currentNpc
-
-      if not npcIsNear(actionNpc) then
-        return
-      end
-
-
-      busy = true
-
-
-      --==================================================--
-      -- 1 - HI
-      --==================================================--
-
-      say("hi")
-
-
-      --==================================================--
-      -- 2 - OPÇÃO
-      --==================================================--
-
-      schedule(DELAY_OPTION, function()
-
-        if npcIsNear(actionNpc) then
-          npcSay(option)
-        end
-      end)
-
-
-      --==================================================--
-      -- 3 - YES / TRADE
-      --==================================================--
-
-      schedule(DELAY_FINAL, function()
-
-        if npcIsNear(actionNpc) then
-
-          local actionData =
-            npcIndex[actionNpc]
-
-          if actionData and
-             actionData.final then
-
-            npcSay(actionData.final)
-          end
-        end
-      end)
-
-
-      --==================================================--
-      -- RESET DA LISTA
-      -- Permite escolher a mesma opção novamente
-      --==================================================--
-
-      schedule(DELAY_RESET, function()
-
-        busy = false
-
-        if currentNpc == actionNpc and
-           npcIsNear(actionNpc) then
-
-          updateNpcOptions(actionNpc)
-        end
-      end)
-
-    end
-end
-
-local ignoreNames = {
-  ["Grovebeast"] = true,
-  ["Skullfrost"] = true,
-  ["Omniphant"] = true,
-  ["Emberwing"] = true,
-  ["Thundergiant"] = true
-}
-
-atkAll = macro(250, function()
-  if not g_game.isOnline() then return end
-
-  -- se já tem target, mantém fixo
-  if g_game.getAttackingCreature() then return end
-
-  local myPos = player:getPosition()
-  local closest
-  local closestDist
-
-  for _, creature in ipairs(getSpectators()) do
-    if creature
-      and creature:isMonster()
-      and not creature:isDead()
-      and not creature:isNpc()
-      and not creature:isPlayer()
-      and creature:getPosition().z == myPos.z
-      and not ignoreNames[creature:getName()]
-    then
-      local dist = getDistanceBetween(myPos, creature:getPosition())
-
-      if not closest or dist < closestDist then
-        closest = creature
-        closestDist = dist
-      end
-    end
-  end
-
-  if closest then
-    attack(closest)
-  end
-end)
-
-addIcon("AtkAll", { item = 12692, text = "target" }, function(icon, isOn)
-  atkAll.setOn(isOn)
-end)
-
-
-local countMP = addIcon("MP", {text="MP", item = 23374}, 
-function(widget,isOn)
-   local id =  23374
-   local contar = macro(1000,function() 
-      local countItem = itemAmount(id)
-      widget.text:setText(countItem.."\n")
-      widget.text:setColor("green")
-   end)
-   contar:setOn()
-end)
-
-local healingSpells = {
-  {spell = 'exura gran san', threshold = 65},  -- Cura mais forte quando HP for 70% ou menos
-  {spell = 'Exura san', threshold = 80},  -- Cura intermediária quando HP for 90% ou menos
-  {spell = 'Exura', threshold = 90}        -- Cura básica quando HP for 99% ou menos
-}
-
-curaru = macro(250, function()
-  local currentHp = hppercent()
-  
-  for _, healing in ipairs(healingSpells) do
-    if currentHp <= healing.threshold then
-      say(healing.spell)
-      break
-    end
-  end
-end)
-
-
-addIcon("CUR", {item=12809, text="exura",}, function(icon, isOn) 
-  curaru.setOn(isOn) 
-end)
-
-Pally_PvP= macro(500, function()
-  if g_game.isAttacking() then
-   say("exori gran con")   
-   say("exori con")   
-  end
-end)
-
-addIcon("(RP) PvP", {item=34089, text="exori con"}, function(icon, isOn)
-Pally_PvP.setOn(isOn)
-end)
-
-local pvp = false
-local comboDelay = 500
-
-local Spells = {
-    {name = "exevo mas san", cast = true, manaCost = 40, level = 90},
-    {name = "exori con", cast = true, manaCost = 115, level = 35},
-    {name = "exori gran con", cast = true, manaCost = 200, level = 70},
-}
-
-local nextCombo = 0
-
-local function getSpell(name)
-    for _, spell in ipairs(Spells) do
-        if spell.name == name then
-            return spell
-        end
-    end
-    return nil
-end
-
-local function canCastSpell(spell)
-    if not spell then
-        return false
-    end
-
-    if not spell.cast then
-        return false
-    end
-
-    if mana() < spell.manaCost then
-        return false
-    end
-
-    if lvl() < spell.level then
-        return false
-    end
-
-    return true
-end
-
-exori = macro(250, function()
-
-    if now < nextCombo then
-        return
-    end
-
-    if not g_game.isAttacking() then
-        return
-    end
-
-    local target = g_game.getAttackingCreature()
-
-    if not target then
-        return
-    end
-
-    local isSafe = true
-    local direct
-    local specAmount = 0
-
-    local whitelistMonsters = {
-        "Emberwing",
-        "Skullfrost",
-        "Groovebeast",
-        "Thundergiant"
-    }
-
-    ----------------------------------------------------------------
-    -- DIREÇÃO DO ALVO
-    ----------------------------------------------------------------
-
-    if player:getPosition().z == target:getPosition().z then
-
-        if player:getPosition().x > target:getPosition().x then
-            direct = 3 -- west
-
-        elseif player:getPosition().x < target:getPosition().x then
-            direct = 1 -- east
-
-        elseif player:getPosition().y > target:getPosition().y then
-            direct = 0 -- north
-
-        elseif player:getPosition().y < target:getPosition().y then
-            direct = 2 -- south
-        end
-    end
-
-    ----------------------------------------------------------------
-    -- CONTA OS MONSTROS
-    ----------------------------------------------------------------
-
-    for i, mob in ipairs(getSpectators()) do
-
-        if mob:isMonster() and
-           getDistanceBetween(player:getPosition(), mob:getPosition()) <= 1 then
-
-            if not table.find(whitelistMonsters, mob:getName()) then
-                specAmount = specAmount + 1
-            end
-        end
-
-        if mob:isPlayer() and player:getName() ~= mob:getName() then
-            isSafe = false
-        end
-    end
-
-    ----------------------------------------------------------------
-    -- PRECISA TER PELO MENOS 1 MONSTRO
-    ----------------------------------------------------------------
-
-    if specAmount < 1 then
-        return
-    end
-
-    ----------------------------------------------------------------
-    -- PVP SAFE
-    ----------------------------------------------------------------
-
-    if pvp and not isSafe then
-        return
-    end
-
-    ----------------------------------------------------------------
-    -- PRIMEIRA MAGIA SEMPRE EXORI CON
-    ----------------------------------------------------------------
-
-    local firstSpell = getSpell("exori con")
-
-    if not canCastSpell(firstSpell) then
-        return
-    end
-
-    say(firstSpell.name)
-
-    ----------------------------------------------------------------
-    -- 1 OU 2 MONSTROS
-    --
-    -- EXORI CON
-    --     ↓ 500ms
-    -- EXORI GRAN CON
-    ----------------------------------------------------------------
-
-    if specAmount <= 2 then
-
-        nextCombo = now + comboDelay + 250
-
-        schedule(comboDelay, function()
-
-            if not g_game.isAttacking() then
-                return
-            end
-
-            local spell = getSpell("exori gran con")
-
-            if canCastSpell(spell) then
-                say(spell.name)
-            end
-
-        end)
-
-    ----------------------------------------------------------------
-    -- 3 OU MAIS MONSTROS
-    --
-    -- EXORI CON
-    --     ↓ 500ms
-    -- EXEVO MAS SAN
-    ----------------------------------------------------------------
-
-    else
-
-        nextCombo = now + comboDelay + 250
-
-        schedule(comboDelay, function()
-
-            if not g_game.isAttacking() then
-                return
-            end
-
-            local spell = getSpell("exevo mas san")
-
-            if canCastSpell(spell) then
-                say(spell.name)
-            end
-
-        end)
-    end
-
-end)
-
-exori = addIcon("exori", { item =34079, text = "mas san"}, exori)
-
-local SpellTab = addTab("Target")
-local name = UI.Label("RUNAS")
-
-macro(800, function()
-  local rainbowDelay = 0
-  for k, color in ipairs({"#ffffff", "#f2f2f2", "#e6e6e6", "#d9d9d9", "#cccccc", "#bfbfbf"}) do
-    schedule(rainbowDelay, function()
-      name:setColor(color)
     end)
-    rainbowDelay = rainbowDelay + 100 -- tempo entre elas
+
+    schedule(DELAY_FINAL, function()
+      if actionStillValid(actionNpc) and actionData.final then
+        npcSay(actionData.final)
+      end
+    end)
+
+    schedule(DELAY_RESET, function()
+      busy = false
+
+      if actionStillValid(actionNpc) then
+        updateNpcOptions(actionNpc)
+      end
+    end)
   end
-end)
+end
+
 
 -- ============================================================
 -- PALADIN AURERA / TELARIA - V5
@@ -2007,3 +1872,250 @@ macro(
 refreshStances()
 
 
+local ignoreNames = {
+  ["Grovebeast"] = true,
+  ["Skullfrost"] = true,
+  ["Omniphant"] = true,
+  ["Emberwing"] = true,
+  ["Thundergiant"] = true
+}
+
+atkAll = macro(250, function()
+  if not g_game.isOnline() then return end
+
+  -- se já tem target, mantém fixo
+  if g_game.getAttackingCreature() then return end
+
+  local myPos = player:getPosition()
+  local closest
+  local closestDist
+
+  for _, creature in ipairs(getSpectators()) do
+    if creature
+      and creature:isMonster()
+      and not creature:isDead()
+      and not creature:isNpc()
+      and not creature:isPlayer()
+      and creature:getPosition().z == myPos.z
+      and not ignoreNames[creature:getName()]
+    then
+      local dist = getDistanceBetween(myPos, creature:getPosition())
+
+      if not closest or dist < closestDist then
+        closest = creature
+        closestDist = dist
+      end
+    end
+  end
+
+  if closest then
+    attack(closest)
+  end
+end)
+
+addIcon("AtkAll", { item = 12692, text = "target" }, function(icon, isOn)
+  atkAll.setOn(isOn)
+end)
+
+
+Pally_PvP= macro(500, function()
+  if g_game.isAttacking() then
+   say("exori gran con")   
+   say("exori con")   
+  end
+end)
+
+addIcon("(RP) PvP", {item=34089, text="exori con"}, function(icon, isOn)
+Pally_PvP.setOn(isOn)
+end)
+
+local pvp = false
+local comboDelay = 500
+
+local Spells = {
+    {name = "exevo mas san", cast = true, manaCost = 40, level = 90},
+    {name = "exori con", cast = true, manaCost = 115, level = 35},
+    {name = "exori gran con", cast = true, manaCost = 200, level = 70},
+}
+
+local nextCombo = 0
+
+local function getSpell(name)
+    for _, spell in ipairs(Spells) do
+        if spell.name == name then
+            return spell
+        end
+    end
+    return nil
+end
+
+local function canCastSpell(spell)
+    if not spell then
+        return false
+    end
+
+    if not spell.cast then
+        return false
+    end
+
+    if mana() < spell.manaCost then
+        return false
+    end
+
+    if lvl() < spell.level then
+        return false
+    end
+
+    return true
+end
+
+exori = macro(250, function()
+
+    if now < nextCombo then
+        return
+    end
+
+    if not g_game.isAttacking() then
+        return
+    end
+
+    local target = g_game.getAttackingCreature()
+
+    if not target then
+        return
+    end
+
+    local isSafe = true
+    local direct
+    local specAmount = 0
+
+    local whitelistMonsters = {
+        "Emberwing",
+        "Skullfrost",
+        "Groovebeast",
+        "Thundergiant"
+    }
+
+    ----------------------------------------------------------------
+    -- DIREÇÃO DO ALVO
+    ----------------------------------------------------------------
+
+    if player:getPosition().z == target:getPosition().z then
+
+        if player:getPosition().x > target:getPosition().x then
+            direct = 3 -- west
+
+        elseif player:getPosition().x < target:getPosition().x then
+            direct = 1 -- east
+
+        elseif player:getPosition().y > target:getPosition().y then
+            direct = 0 -- north
+
+        elseif player:getPosition().y < target:getPosition().y then
+            direct = 2 -- south
+        end
+    end
+
+    ----------------------------------------------------------------
+    -- CONTA OS MONSTROS
+    ----------------------------------------------------------------
+
+    for i, mob in ipairs(getSpectators()) do
+
+        if mob:isMonster() and
+           getDistanceBetween(player:getPosition(), mob:getPosition()) <= 1 then
+
+            if not table.find(whitelistMonsters, mob:getName()) then
+                specAmount = specAmount + 1
+            end
+        end
+
+        if mob:isPlayer() and player:getName() ~= mob:getName() then
+            isSafe = false
+        end
+    end
+
+    ----------------------------------------------------------------
+    -- PRECISA TER PELO MENOS 1 MONSTRO
+    ----------------------------------------------------------------
+
+    if specAmount < 1 then
+        return
+    end
+
+    ----------------------------------------------------------------
+    -- PVP SAFE
+    ----------------------------------------------------------------
+
+    if pvp and not isSafe then
+        return
+    end
+
+    ----------------------------------------------------------------
+    -- PRIMEIRA MAGIA SEMPRE EXORI CON
+    ----------------------------------------------------------------
+
+    local firstSpell = getSpell("exori con")
+
+    if not canCastSpell(firstSpell) then
+        return
+    end
+
+    say(firstSpell.name)
+
+    ----------------------------------------------------------------
+    -- 1 OU 2 MONSTROS
+    --
+    -- EXORI CON
+    --     ↓ 500ms
+    -- EXORI GRAN CON
+    ----------------------------------------------------------------
+
+    if specAmount <= 2 then
+
+        nextCombo = now + comboDelay + 250
+
+        schedule(comboDelay, function()
+
+            if not g_game.isAttacking() then
+                return
+            end
+
+            local spell = getSpell("exori gran con")
+
+            if canCastSpell(spell) then
+                say(spell.name)
+            end
+
+        end)
+
+    ----------------------------------------------------------------
+    -- 3 OU MAIS MONSTROS
+    --
+    -- EXORI CON
+    --     ↓ 500ms
+    -- EXEVO MAS SAN
+    ----------------------------------------------------------------
+
+    else
+
+        nextCombo = now + comboDelay + 250
+
+        schedule(comboDelay, function()
+
+            if not g_game.isAttacking() then
+                return
+            end
+
+            local spell = getSpell("exevo mas san")
+
+            if canCastSpell(spell) then
+                say(spell.name)
+            end
+
+        end)
+    end
+
+end)
+
+exori = addIcon("exori", { item =34079, text = "mas san"}, exori)
