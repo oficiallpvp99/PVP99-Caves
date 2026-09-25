@@ -41,59 +41,60 @@ local VOCATIONS = {
   }
 }
 
-local loading = false
+-- ============================================================
+-- PVP99 - POSICOES AUTOMATICAS DOS ICONES POR VOCACAO
+-- Gerado a partir dos profiles Knight/Monk/Paladin/Sorcerer/Druid
+-- Apenas X/Y sao aplicados. ON/OFF dos macros nao e alterado.
+-- ============================================================
 
-g_ui.loadUIFromString([[
-
-Pvp99VocationCard < Button
-  width: 114
-  height: 76
-  background-color: #2b241f
-  border-width: 1
-  border-color: #5b4a35
-
-  $hover:
-    background-color: #2b241f
-    border-color: #5b4a35
-
-  $pressed:
-    background-color: #433428
-    border-color: #f2c676
-
-
-Pvp99CancelButton < Button
-  width: 74
-  height: 18
-  background-color: #35291f
-  border-width: 1
-  border-color: #765f45
-  color: #e8dcc4
-  font: verdana-11px-rounded
-
-  $hover:
-    background-color: #483625
-    border-color: #d7ad61
-    color: #fff2d1
-
-  $pressed:
-    background-color: #261d17
-    border-color: #f2c676
-
-
-Pvp99VocationWindow < MainWindow
-  id: pvp99VocationWindow
-  text: PVP99
-  size: 278 346
-  @onEscape: self:hide()
-
-  Label
-    id: title
-    text: ESCOLHER VOCATION
-    width: 250
-    text-align: center
-    anchors.top: parent.top
-    anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 5
-    color: #f0c36d
-    font: verdana-11px-rounded
+local PVP99_ICON_POSITIONS = {
+  knight = {
+    ["(RP) PvP"] = { x = 0.55154639175258, y = 0.14883720930233 },
+    ["AtkAll"] = { x = 0.069264069264069, y = 0.13006396588486 },
+    ["AVA"] = { x = 0.046153846153846, y = 0.8 },
+    ["cI"] = { x = 0, y = 0.40085287846482 },
+    ["Co"] = { x = 0, y = 0.10660980810235 },
+    ["cr"] = { x = 0.078512396694215, y = 0.14418604651163 },
+    ["CUR"] = { x = 0.10714285714286, y = 0.57782515991471 },
+    ["ekAureraAttack"] = { x = 0.0032967032967033, y = 0.53186813186813 },
+    ["ekAureraDefense"] = { x = 0.069230769230769, y = 0.52307692307692 },
+    ["ekAureraRotation"] = { x = 0.049450549450549, y = 0.68571428571429 },
+    ["exori"] = { x = 0.087809917355372, y = 0 },
+    ["exori1"] = { x = 0.94834710743802, y = 0.027906976744186 },
+    ["exori2"] = { x = 0.41978021978022, y = 0.25217391304348 },
+    ["heals"] = { x = 0.57802197802198, y = 0.25217391304348 },
+    ["HP"] = { x = 0.0021645021645022, y = 0.27078891257996 },
+    ["monk"] = { x = 0.01, y = 0.25 },
+    ["MP"] = { x = 0.075757575757576, y = 0.26652452025586 },
+    ["RG"] = { x = 0.11776859504132, y = 0.14651162790698 },
+    ["SD"] = { x = 0.054945054945055, y = 0.45507246376812 },
+    ["teste"] = { x = 0.01, y = 0.45 },
+    ["tI"] = { x = 0.070021881838074, y = 0.40085287846482 },
+  },
+  monk = {
+    ["(RP) PvP"] = { x = 0.55154639175258, y = 0.14883720930233 },
+    ["AtkAll"] = { x = 0.0086580086580087, y = 0.20042643923241 },
+    ["AVA"] = { x = 0.046153846153846, y = 0.8 },
+    ["cI"] = { x = 0.080962800875274, y = 0.40938166311301 },
+    ["Co"] = { x = 0.0032467532467532, y = 0.051172707889126 },
+    ["cr"] = { x = 0.078512396694215, y = 0.14418604651163 },
+    ["CUR"] = { x = 0.076839826839827, y = 0.05543710021322 },
+    ["exori"] = { x = 0.087809917355372, y = 0 },
+    ["exori1"] = { x = 0.94834710743802, y = 0.027906976744186 },
+    ["exori2"] = { x = 0.41978021978022, y = 0.25217391304348 },
+    ["heals"] = { x = 0.57802197802198, y = 0.25217391304348 },
+    ["HP"] = { x = 0.08008658008658, y = 0.18976545842217 },
+    ["monk"] = { x = 0.01, y = 0.25 },
+    ["monkAureraHarmonyV5"] = { x = 0.91648351648352, y = 0.085714285714286 },
+    ["monkAureraJusticeV5"] = { x = 1, y = 0.079120879120879 },
+    ["monkAureraRotationV5"] = { x = 0.91208791208791, y = 0.29010989010989 },
+    ["monkAureraSustainV5"] = { x = 1, y = 0.28791208791209 },
+    ["MP"] = { x = 0.085497835497836, y = 0.30277185501066 },
+    ["RG"] = { x = 0.11776859504132, y = 0.14651162790698 },
+    ["SD"] = { x = 0.054945054945055, y = 0.45507246376812 },
+    ["teste"] = { x = 0.01, y = 0.45 },
+    ["tI"] = { x = 0, y = 0.40724946695096 },
+  },
+  paladin = {
+    ["(RP) PvP"] = { x = 0.1038961038961, y = 0.32835820895522 },
 
