@@ -1,6 +1,3 @@
-
-    
-  
 -- ============================================================
 -- PVP99 - SELETOR DE VOCACAO MEDIEVAL
 -- VERSAO CORRIGIDA / COMPACTA
