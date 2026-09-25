@@ -41,13 +41,6 @@ local VOCATIONS = {
   }
 }
 
--- ============================================================
--- PVP99 - POSICOES LIVRES
--- O loader nao sobrescreve mais storage._icons.
--- PC: cada usuario mantem as posicoes salvas pelo proprio OTC.
--- Mobile: presets de posicao podem ser tratados separadamente depois.
--- ============================================================
-
 local loading = false
 
 g_ui.loadUIFromString([[
@@ -97,4 +90,10 @@ Pvp99VocationWindow < MainWindow
     id: title
     text: ESCOLHER VOCATION
     width: 250
+    text-align: center
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 5
+    color: #f0c36d
+    font: verdana-11px-rounded
 
