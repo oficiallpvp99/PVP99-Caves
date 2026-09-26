@@ -1,3 +1,4 @@
+
 local ropeId = 3003  -- ID da Rope
 local useOnSelf = true  -- Variável para usar em você mesmo
 
@@ -243,28 +244,6 @@ macro(100, function()
 
   end
 
-end)
-
-local countMP = addIcon("HP", {text="HP", item = 23374}, 
-function(widget,isOn)
-   local id =  23374
-   local contar = macro(1000,function() 
-      local countItem = itemAmount(id)
-      widget.text:setText(countItem.."\n")
-      widget.text:setColor("green")
-   end)
-   contar:setOn()
-end)
-
-local countMP = addIcon("MP", {text="MP", item = 53164}, 
-function(widget,isOn)
-   local id = 53164
-   local contar = macro(1000,function() 
-      local countItem = itemAmount(id)
-      widget.text:setText(countItem.."\n")
-      widget.text:setColor("green")
-   end)
-   contar:setOn()
 end)
 
 -- PVP99 - NPC SYSTEM V2 COMPLETO
@@ -1082,6 +1061,55 @@ if rootWidget then
     end)
   end
 end
+
+
+local ignoreNames = {
+  ["Grovebeast"] = true,
+  ["Skullfrost"] = true,
+  ["Omniphant"] = true,
+  ["Emberwing"] = true,
+  ["Thundergiant"] = true
+}
+
+atkAll = macro(100, function()
+  if not g_game.isOnline() then return end
+
+  -- se já tem target, mantém fixo
+  if g_game.getAttackingCreature() then return end
+
+  local myPos = player:getPosition()
+  local closest
+  local closestDist
+
+  for _, creature in ipairs(getSpectators()) do
+    if creature
+      and creature:isMonster()
+      and not creature:isDead()
+      and not creature:isNpc()
+      and not creature:isPlayer()
+      and creature:getPosition().z == myPos.z
+      and not ignoreNames[creature:getName()]
+    then
+      local dist = getDistanceBetween(myPos, creature:getPosition())
+
+      if not closest or dist < closestDist then
+        closest = creature
+        closestDist = dist
+      end
+    end
+  end
+
+  if closest then
+    attack(closest)
+  end
+end)
+
+addIcon("AtkAll", { item = 12692, text = "target" }, function(icon, isOn)
+  atkAll.setOn(isOn)
+end)
+
+
+
 
 
 -- ============================================================
@@ -1946,4 +1974,3 @@ end)
 addIcon("AtkAll", { item = 12692, text = "target" }, function(icon, isOn)
   atkAll.setOn(isOn)
 end)
-
