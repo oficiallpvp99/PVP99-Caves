@@ -1974,3 +1974,25 @@ end)
 addIcon("AtkAll", { item = 12692, text = "target" }, function(icon, isOn)
   atkAll.setOn(isOn)
 end)
+
+local countMP = addIcon("MP", {text="MP", item = 23374}, 
+function(widget,isOn)
+   local id =  23374
+   local contar = macro(1000,function() 
+      local countItem = itemAmount(id)
+      widget.text:setText(countItem.."\n")
+      widget.text:setColor("green")
+   end)
+   contar:setOn()
+end)
+
+local countMP = addIcon("MP", {text="MP", item = 53164}, 
+function(widget,isOn)
+   local id =  53164
+   local contar = macro(1000,function() 
+      local countItem = itemAmount(id)
+      widget.text:setText(countItem.."\n")
+      widget.text:setColor("green")
+   end)
+   contar:setOn()
+end)
