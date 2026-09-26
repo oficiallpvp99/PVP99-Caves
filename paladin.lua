@@ -94,7 +94,7 @@ local healingSpells = {
   -- HP máximo para usar / mana mínima recomendada
   {spell = "exura gran san", hp = 65, mana = 20},
   {spell = "exura san",      hp = 82, mana = 12},
-  {spell = "exura",          hp = 96, mana = 5}
+  {spell = "exura",          hp = 92, mana = 5}
 }
 
 local EMERGENCY_HP = 45
@@ -1067,6 +1067,254 @@ if rootWidget then
   end
 end
 
+local ignoreNames = {
+  ["Grovebeast"] = true,
+  ["Skullfrost"] = true,
+  ["Omniphant"] = true,
+  ["Emberwing"] = true,
+  ["Thundergiant"] = true
+}
+
+atkAll = macro(250, function()
+  if not g_game.isOnline() then return end
+
+  -- se já tem target, mantém fixo
+  if g_game.getAttackingCreature() then return end
+
+  local myPos = player:getPosition()
+  local closest
+  local closestDist
+
+  for _, creature in ipairs(getSpectators()) do
+    if creature
+      and creature:isMonster()
+      and not creature:isDead()
+      and not creature:isNpc()
+      and not creature:isPlayer()
+      and creature:getPosition().z == myPos.z
+      and not ignoreNames[creature:getName()]
+    then
+      local dist = getDistanceBetween(myPos, creature:getPosition())
+
+      if not closest or dist < closestDist then
+        closest = creature
+        closestDist = dist
+      end
+    end
+  end
+
+  if closest then
+    attack(closest)
+  end
+end)
+
+addIcon("AtkAll", { item = 12692, text = "target" }, function(icon, isOn)
+  atkAll.setOn(isOn)
+end)
+
+
+Pally_PvP= macro(500, function()
+  if g_game.isAttacking() then
+   say("exori gran con")   
+   say("exori con")   
+  end
+end)
+
+addIcon("(RP) PvP", {item=34089, text="exori con"}, function(icon, isOn)
+Pally_PvP.setOn(isOn)
+end)
+
+local pvp = false
+local comboDelay = 500
+
+local Spells = {
+    {name = "exevo mas san", cast = true, manaCost = 40, level = 90},
+    {name = "exori con", cast = true, manaCost = 115, level = 35},
+    {name = "exori gran con", cast = true, manaCost = 200, level = 70},
+}
+
+local nextCombo = 0
+
+local function getSpell(name)
+    for _, spell in ipairs(Spells) do
+        if spell.name == name then
+            return spell
+        end
+    end
+    return nil
+end
+
+local function canCastSpell(spell)
+    if not spell then
+        return false
+    end
+
+    if not spell.cast then
+        return false
+    end
+
+    if mana() < spell.manaCost then
+        return false
+    end
+
+    if lvl() < spell.level then
+        return false
+    end
+
+    return true
+end
+
+exori = macro(250, function()
+
+    if now < nextCombo then
+        return
+    end
+
+    if not g_game.isAttacking() then
+        return
+    end
+
+    local target = g_game.getAttackingCreature()
+
+    if not target then
+        return
+    end
+
+    local isSafe = true
+    local direct
+    local specAmount = 0
+
+    local whitelistMonsters = {
+        "Emberwing",
+        "Skullfrost",
+        "Groovebeast",
+        "Thundergiant"
+    }
+
+    ----------------------------------------------------------------
+    -- DIREÇÃO DO ALVO
+    ----------------------------------------------------------------
+
+    if player:getPosition().z == target:getPosition().z then
+
+        if player:getPosition().x > target:getPosition().x then
+            direct = 3 -- west
+
+        elseif player:getPosition().x < target:getPosition().x then
+            direct = 1 -- east
+
+        elseif player:getPosition().y > target:getPosition().y then
+            direct = 0 -- north
+
+        elseif player:getPosition().y < target:getPosition().y then
+            direct = 2 -- south
+        end
+    end
+
+    ----------------------------------------------------------------
+    -- CONTA OS MONSTROS
+    ----------------------------------------------------------------
+
+    for i, mob in ipairs(getSpectators()) do
+
+        if mob:isMonster() and
+           getDistanceBetween(player:getPosition(), mob:getPosition()) <= 1 then
+
+            if not table.find(whitelistMonsters, mob:getName()) then
+                specAmount = specAmount + 1
+            end
+        end
+
+        if mob:isPlayer() and player:getName() ~= mob:getName() then
+            isSafe = false
+        end
+    end
+
+    ----------------------------------------------------------------
+    -- PRECISA TER PELO MENOS 1 MONSTRO
+    ----------------------------------------------------------------
+
+    if specAmount < 1 then
+        return
+    end
+
+    ----------------------------------------------------------------
+    -- PVP SAFE
+    ----------------------------------------------------------------
+
+    if pvp and not isSafe then
+        return
+    end
+
+    ----------------------------------------------------------------
+    -- PRIMEIRA MAGIA SEMPRE EXORI CON
+    ----------------------------------------------------------------
+
+    local firstSpell = getSpell("exori con")
+
+    if not canCastSpell(firstSpell) then
+        return
+    end
+
+    say(firstSpell.name)
+
+    ----------------------------------------------------------------
+    -- 1 OU 2 MONSTROS
+    --
+    -- EXORI CON
+    --     ↓ 500ms
+    -- EXORI GRAN CON
+    ----------------------------------------------------------------
+
+    if specAmount <= 2 then
+
+        nextCombo = now + comboDelay + 250
+
+        schedule(comboDelay, function()
+
+            if not g_game.isAttacking() then
+                return
+            end
+
+            local spell = getSpell("exori gran con")
+
+            if canCastSpell(spell) then
+                say(spell.name)
+            end
+
+        end)
+
+    ----------------------------------------------------------------
+    -- 3 OU MAIS MONSTROS
+    --
+    -- EXORI CON
+    --     ↓ 500ms
+    -- EXEVO MAS SAN
+    ----------------------------------------------------------------
+
+    else
+
+        nextCombo = now + comboDelay + 250
+
+        schedule(comboDelay, function()
+
+            if not g_game.isAttacking() then
+                return
+            end
+
+            local spell = getSpell("exevo mas san")
+
+            if canCastSpell(spell) then
+                say(spell.name)
+            end
+
+        end)
+    end
+
+end)
+
+exori = addIcon("exori", { item =34079, text = "mas san"}, exori)
+
 
 -- ============================================================
 -- PALADIN AURERA / TELARIA - V5
@@ -1871,251 +2119,3 @@ macro(
 
 refreshStances()
 
-
-local ignoreNames = {
-  ["Grovebeast"] = true,
-  ["Skullfrost"] = true,
-  ["Omniphant"] = true,
-  ["Emberwing"] = true,
-  ["Thundergiant"] = true
-}
-
-atkAll = macro(250, function()
-  if not g_game.isOnline() then return end
-
-  -- se já tem target, mantém fixo
-  if g_game.getAttackingCreature() then return end
-
-  local myPos = player:getPosition()
-  local closest
-  local closestDist
-
-  for _, creature in ipairs(getSpectators()) do
-    if creature
-      and creature:isMonster()
-      and not creature:isDead()
-      and not creature:isNpc()
-      and not creature:isPlayer()
-      and creature:getPosition().z == myPos.z
-      and not ignoreNames[creature:getName()]
-    then
-      local dist = getDistanceBetween(myPos, creature:getPosition())
-
-      if not closest or dist < closestDist then
-        closest = creature
-        closestDist = dist
-      end
-    end
-  end
-
-  if closest then
-    attack(closest)
-  end
-end)
-
-addIcon("AtkAll", { item = 12692, text = "target" }, function(icon, isOn)
-  atkAll.setOn(isOn)
-end)
-
-
-Pally_PvP= macro(500, function()
-  if g_game.isAttacking() then
-   say("exori gran con")   
-   say("exori con")   
-  end
-end)
-
-addIcon("(RP) PvP", {item=34089, text="exori con"}, function(icon, isOn)
-Pally_PvP.setOn(isOn)
-end)
-
-local pvp = false
-local comboDelay = 500
-
-local Spells = {
-    {name = "exevo mas san", cast = true, manaCost = 40, level = 90},
-    {name = "exori con", cast = true, manaCost = 115, level = 35},
-    {name = "exori gran con", cast = true, manaCost = 200, level = 70},
-}
-
-local nextCombo = 0
-
-local function getSpell(name)
-    for _, spell in ipairs(Spells) do
-        if spell.name == name then
-            return spell
-        end
-    end
-    return nil
-end
-
-local function canCastSpell(spell)
-    if not spell then
-        return false
-    end
-
-    if not spell.cast then
-        return false
-    end
-
-    if mana() < spell.manaCost then
-        return false
-    end
-
-    if lvl() < spell.level then
-        return false
-    end
-
-    return true
-end
-
-exori = macro(250, function()
-
-    if now < nextCombo then
-        return
-    end
-
-    if not g_game.isAttacking() then
-        return
-    end
-
-    local target = g_game.getAttackingCreature()
-
-    if not target then
-        return
-    end
-
-    local isSafe = true
-    local direct
-    local specAmount = 0
-
-    local whitelistMonsters = {
-        "Emberwing",
-        "Skullfrost",
-        "Groovebeast",
-        "Thundergiant"
-    }
-
-    ----------------------------------------------------------------
-    -- DIREÇÃO DO ALVO
-    ----------------------------------------------------------------
-
-    if player:getPosition().z == target:getPosition().z then
-
-        if player:getPosition().x > target:getPosition().x then
-            direct = 3 -- west
-
-        elseif player:getPosition().x < target:getPosition().x then
-            direct = 1 -- east
-
-        elseif player:getPosition().y > target:getPosition().y then
-            direct = 0 -- north
-
-        elseif player:getPosition().y < target:getPosition().y then
-            direct = 2 -- south
-        end
-    end
-
-    ----------------------------------------------------------------
-    -- CONTA OS MONSTROS
-    ----------------------------------------------------------------
-
-    for i, mob in ipairs(getSpectators()) do
-
-        if mob:isMonster() and
-           getDistanceBetween(player:getPosition(), mob:getPosition()) <= 1 then
-
-            if not table.find(whitelistMonsters, mob:getName()) then
-                specAmount = specAmount + 1
-            end
-        end
-
-        if mob:isPlayer() and player:getName() ~= mob:getName() then
-            isSafe = false
-        end
-    end
-
-    ----------------------------------------------------------------
-    -- PRECISA TER PELO MENOS 1 MONSTRO
-    ----------------------------------------------------------------
-
-    if specAmount < 1 then
-        return
-    end
-
-    ----------------------------------------------------------------
-    -- PVP SAFE
-    ----------------------------------------------------------------
-
-    if pvp and not isSafe then
-        return
-    end
-
-    ----------------------------------------------------------------
-    -- PRIMEIRA MAGIA SEMPRE EXORI CON
-    ----------------------------------------------------------------
-
-    local firstSpell = getSpell("exori con")
-
-    if not canCastSpell(firstSpell) then
-        return
-    end
-
-    say(firstSpell.name)
-
-    ----------------------------------------------------------------
-    -- 1 OU 2 MONSTROS
-    --
-    -- EXORI CON
-    --     ↓ 500ms
-    -- EXORI GRAN CON
-    ----------------------------------------------------------------
-
-    if specAmount <= 2 then
-
-        nextCombo = now + comboDelay + 250
-
-        schedule(comboDelay, function()
-
-            if not g_game.isAttacking() then
-                return
-            end
-
-            local spell = getSpell("exori gran con")
-
-            if canCastSpell(spell) then
-                say(spell.name)
-            end
-
-        end)
-
-    ----------------------------------------------------------------
-    -- 3 OU MAIS MONSTROS
-    --
-    -- EXORI CON
-    --     ↓ 500ms
-    -- EXEVO MAS SAN
-    ----------------------------------------------------------------
-
-    else
-
-        nextCombo = now + comboDelay + 250
-
-        schedule(comboDelay, function()
-
-            if not g_game.isAttacking() then
-                return
-            end
-
-            local spell = getSpell("exevo mas san")
-
-            if canCastSpell(spell) then
-                say(spell.name)
-            end
-
-        end)
-    end
-
-end)
-
-exori = addIcon("exori", { item =34079, text = "mas san"}, exori)
