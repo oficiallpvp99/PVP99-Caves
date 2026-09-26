@@ -2,98 +2,99 @@
     
   
 -- ============================================================
--- PVP99 - SELETOR DE VOCACAO MEDIEVAL
--- VERSAO CORRIGIDA / COMPACTA
+-- PVP99 - LOADER FUTURISTA | OTCv8
+-- 4 VOCACOES: KNIGHT / PALADIN / SORCERER / DRUID
+-- Sem JSON, sem profiles e sem sistema proprio de posicoes.
 -- ============================================================
 
-local BASE_URL =
+local SCRIPT_BASE =
+  "https://raw.githubusercontent.com/oficiallpvp99/PVP99-Dist/refs/heads/main/"
+
+local IMAGE_BASE =
   "https://raw.githubusercontent.com/oficiallpvp99/PVP99-Caves/refs/heads/main/"
 
 local VOCATIONS = {
   knight = {
     name = "KNIGHT",
+    subtitle = "MELEE / DEFESA",
     file = "knight.lua",
-    image = BASE_URL .. "knight.png"
-  },
-
-  monk = {
-    name = "MONK",
-    file = "monk.lua",
-    image = BASE_URL .. "monk.png?v=2"
+    image = IMAGE_BASE .. "knight.png"
   },
 
   paladin = {
     name = "PALADIN",
+    subtitle = "DISTANCIA / SUPORTE",
     file = "paladin.lua",
-    image = BASE_URL .. "paladin.png"
+    image = IMAGE_BASE .. "paladin.png"
   },
 
   sorcerer = {
     name = "SORCERER",
+    subtitle = "MAGIA / DANO",
     file = "sorcerer.lua",
-    image = BASE_URL .. "sorcerer.png"
+    image = IMAGE_BASE .. "sorcerer.png"
   },
 
   druid = {
     name = "DRUID",
+    subtitle = "CURA / MAGIA",
     file = "druid.lua",
-    image = BASE_URL .. "druid.png"
+    image = IMAGE_BASE .. "druid.png"
   }
 }
 
 local loading = false
 
-g_ui.loadUIFromString([[
+-- ============================================================
+-- UI
+-- ============================================================
 
-Pvp99VocationCard < Button
-  width: 114
-  height: 76
-  background-color: #2b241f
+g_ui.loadUIFromString([[
+Pvp99FutureCard < Button
+  width: 122
+  height: 92
+  background-color: #17131f
   border-width: 1
-  border-color: #5b4a35
+  border-color: #5f3a7a
 
   $hover:
-    background-color: #2b241f
-    border-color: #5b4a35
+    background-color: #21172c
+    border-color: #c05cff
 
   $pressed:
-    background-color: #433428
-    border-color: #f2c676
+    background-color: #2b1d3a
+    border-color: #ff72df
 
-
-Pvp99CancelButton < Button
-  width: 74
-  height: 18
-  background-color: #35291f
+Pvp99FutureClose < Button
+  width: 86
+  height: 22
+  background-color: #1b1522
   border-width: 1
-  border-color: #765f45
-  color: #e8dcc4
+  border-color: #62406f
+  color: #d8cae8
   font: verdana-11px-rounded
 
   $hover:
-    background-color: #483625
-    border-color: #d7ad61
-    color: #fff2d1
+    background-color: #291d34
+    border-color: #d263ff
+    color: #ffffff
 
   $pressed:
-    background-color: #261d17
-    border-color: #f2c676
+    background-color: #140f19
+    border-color: #ff72df
 
-
-Pvp99VocationWindow < MainWindow
-  id: pvp99VocationWindow
+Pvp99FutureWindow < MainWindow
+  id: pvp99FutureWindow
   text: PVP99
-  size: 278 346
+  size: 292 312
   @onEscape: self:hide()
 
   Label
-    id: title
-    text: ESCOLHER VOCATION
-    width: 250
+    id: glowTop
+    text: ◆ PVP99 SYSTEM ◆
+    width: 260
     text-align: center
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 5
-    color: #f0c36d
-    font: verdana-11px-rounded
+    margin-top: 6
 
