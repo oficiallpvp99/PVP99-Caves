@@ -31,128 +31,26 @@ end)
 
 UI.Label("Stack")
 
-local STACK_DELAY = 100
-local MAX_STACK = 100
-
-macro(STACK_DELAY, "Stack Items V3", function()
-  local stacks = {}
-
-  -- =========================================================
-  -- 1. MAPEIA TODAS AS STACKS INCOMPLETAS
-  -- =========================================================
-  for _, container in pairs(g_game.getContainers()) do
-    if not container.lootContainer then
-      local items = container:getItems()
-
-      for slot, item in ipairs(items) do
-        if item:isStackable() then
-          local count = item:getCount()
-
-          if count > 0 and count < MAX_STACK then
-            local id = item:getId()
-
-            if not stacks[id] then
-              stacks[id] = {}
-            end
-
-            table.insert(stacks[id], {
-              item = item,
-              count = count,
-              position = container:getSlotPosition(slot - 1)
-            })
+macro(1000, "Stack items", function()
+  local containers = g_game.getContainers()
+  local toStack = {}
+  for index, container in pairs(containers) do
+    if not container.lootContainer then -- ignore monster containers
+      for i, item in ipairs(container:getItems()) do
+        if item:isStackable() and item:getCount() < 100 then
+          local stackWith = toStack[item:getId()]
+          if stackWith then
+            g_game.move(item, stackWith[1], math.min(stackWith[2], item:getCount()))
+            return
           end
-        end
-      end
-    end
-  end
-
-  -- =========================================================
-  -- 2. PROCURA O MELHOR PAR DE STACKS
-  -- =========================================================
-  for _, group in pairs(stacks) do
-    if #group >= 2 then
-
-      -- Stack mais cheia primeiro
-      table.sort(group, function(a, b)
-        return a.count > b.count
-      end)
-
-      local target = group[1]
-      local needed = MAX_STACK - target.count
-      local donor = nil
-
-      -- =====================================================
-      -- PRIORIDADE 1:
-      -- procura uma stack que complete exatamente 100
-      -- =====================================================
-      for i = 2, #group do
-        if group[i].count == needed then
-          donor = group[i]
-          break
-        end
-      end
-
-      -- =====================================================
-      -- PRIORIDADE 2:
-      -- pega a maior stack que caiba inteira
-      -- =====================================================
-      if not donor then
-        local bestCount = 0
-
-        for i = 2, #group do
-          local candidate = group[i]
-
-          if candidate.count < needed and
-             candidate.count > bestCount then
-
-            donor = candidate
-            bestCount = candidate.count
-          end
-        end
-      end
-
-      -- =====================================================
-      -- PRIORIDADE 3:
-      -- se nenhuma couber inteira, usa a menor stack
-      -- capaz de completar o destino
-      -- =====================================================
-      if not donor then
-        local smallest = MAX_STACK + 1
-
-        for i = 2, #group do
-          local candidate = group[i]
-
-          if candidate.count > needed and
-             candidate.count < smallest then
-
-            donor = candidate
-            smallest = candidate.count
-          end
-        end
-      end
-
-      -- =====================================================
-      -- 3. EXECUTA SOMENTE UM MOVIMENTO POR CICLO
-      -- =====================================================
-      if donor then
-        local amount = math.min(
-          donor.count,
-          needed
-        )
-
-        if amount > 0 then
-          g_game.move(
-            donor.item,
-            target.position,
-            amount
-          )
-
-          return
+          toStack[item:getId()] = {container:getSlotPosition(i - 1), 100 - item:getCount()}
         end
       end
     end
   end
 end)
+
+local ms = 0 -- Garante que a variável existe antes do primeiro uso
 
 local healingSpells = {
   {spell = "exura gran tio", threshold = 70}, -- Cura forte
