@@ -31,82 +31,128 @@ end)
 
 UI.Label("Stack")
 
-local STACK_DELAY = 100 -- velocidade do macro
+local STACK_DELAY = 100
 local MAX_STACK = 100
 
-macro(STACK_DELAY, "Stack items", function()
-
-  local containers = g_game.getContainers()
+macro(STACK_DELAY, "Stack Items V3", function()
   local stacks = {}
 
-  -- 1. Mapeia todos os itens stackáveis
-  for _, container in pairs(containers) do
-
-    -- Ignora loot containers de monstros
+  -- =========================================================
+  -- 1. MAPEIA TODAS AS STACKS INCOMPLETAS
+  -- =========================================================
+  for _, container in pairs(g_game.getContainers()) do
     if not container.lootContainer then
-
       local items = container:getItems()
 
       for slot, item in ipairs(items) do
+        if item:isStackable() then
+          local count = item:getCount()
 
-        if item:isStackable() and item:getCount() < MAX_STACK then
+          if count > 0 and count < MAX_STACK then
+            local id = item:getId()
 
-          local id = item:getId()
+            if not stacks[id] then
+              stacks[id] = {}
+            end
 
-          if not stacks[id] then
-            stacks[id] = {}
+            table.insert(stacks[id], {
+              item = item,
+              count = count,
+              position = container:getSlotPosition(slot - 1)
+            })
           end
-
-          table.insert(stacks[id], {
-            item = item,
-            count = item:getCount(),
-            position = container:getSlotPosition(slot - 1)
-          })
-
         end
       end
     end
   end
 
-  -- 2. Procura itens iguais que podem ser unidos
-  for id, itemList in pairs(stacks) do
+  -- =========================================================
+  -- 2. PROCURA O MELHOR PAR DE STACKS
+  -- =========================================================
+  for _, group in pairs(stacks) do
+    if #group >= 2 then
 
-    if #itemList >= 2 then
-
-      -- Deixa as pilhas mais cheias primeiro
-      table.sort(itemList, function(a, b)
+      -- Stack mais cheia primeiro
+      table.sort(group, function(a, b)
         return a.count > b.count
       end)
 
-      -- Destino = pilha mais cheia
-      local destination = itemList[1]
+      local target = group[1]
+      local needed = MAX_STACK - target.count
+      local donor = nil
 
-      -- Procura uma pilha para completar o destino
-      for i = 2, #itemList do
+      -- =====================================================
+      -- PRIORIDADE 1:
+      -- procura uma stack que complete exatamente 100
+      -- =====================================================
+      for i = 2, #group do
+        if group[i].count == needed then
+          donor = group[i]
+          break
+        end
+      end
 
-        local source = itemList[i]
+      -- =====================================================
+      -- PRIORIDADE 2:
+      -- pega a maior stack que caiba inteira
+      -- =====================================================
+      if not donor then
+        local bestCount = 0
 
-        if destination.count < MAX_STACK and source.count > 0 then
+        for i = 2, #group do
+          local candidate = group[i]
 
-          local missing = MAX_STACK - destination.count
-          local amount = math.min(missing, source.count)
+          if candidate.count < needed and
+             candidate.count > bestCount then
 
-          if amount > 0 then
-            g_game.move(
-              source.item,
-              destination.position,
-              amount
-            )
-
-            return
+            donor = candidate
+            bestCount = candidate.count
           end
+        end
+      end
+
+      -- =====================================================
+      -- PRIORIDADE 3:
+      -- se nenhuma couber inteira, usa a menor stack
+      -- capaz de completar o destino
+      -- =====================================================
+      if not donor then
+        local smallest = MAX_STACK + 1
+
+        for i = 2, #group do
+          local candidate = group[i]
+
+          if candidate.count > needed and
+             candidate.count < smallest then
+
+            donor = candidate
+            smallest = candidate.count
+          end
+        end
+      end
+
+      -- =====================================================
+      -- 3. EXECUTA SOMENTE UM MOVIMENTO POR CICLO
+      -- =====================================================
+      if donor then
+        local amount = math.min(
+          donor.count,
+          needed
+        )
+
+        if amount > 0 then
+          g_game.move(
+            donor.item,
+            target.position,
+            amount
+          )
+
+          return
         end
       end
     end
   end
 end)
-
-local ms = 0 -- Garante que a variável existe antes do primeiro uso
 
 local healingSpells = {
   {spell = "exura gran tio", threshold = 70}, -- Cura forte
