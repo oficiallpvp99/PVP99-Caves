@@ -13,75 +13,19 @@ end)
 
 UI.Label("Stack")
 
-local STACK_DELAY = 100 -- velocidade do macro
-local MAX_STACK = 100
-
-macro(STACK_DELAY, "Stack items", function()
-
+macro(1000, "Stack items", function()
   local containers = g_game.getContainers()
-  local stacks = {}
-
-  -- 1. Mapeia todos os itens stackáveis
-  for _, container in pairs(containers) do
-
-    -- Ignora loot containers de monstros
-    if not container.lootContainer then
-
-      local items = container:getItems()
-
-      for slot, item in ipairs(items) do
-
-        if item:isStackable() and item:getCount() < MAX_STACK then
-
-          local id = item:getId()
-
-          if not stacks[id] then
-            stacks[id] = {}
-          end
-
-          table.insert(stacks[id], {
-            item = item,
-            count = item:getCount(),
-            position = container:getSlotPosition(slot - 1)
-          })
-
-        end
-      end
-    end
-  end
-
-  -- 2. Procura itens iguais que podem ser unidos
-  for id, itemList in pairs(stacks) do
-
-    if #itemList >= 2 then
-
-      -- Deixa as pilhas mais cheias primeiro
-      table.sort(itemList, function(a, b)
-        return a.count > b.count
-      end)
-
-      -- Destino = pilha mais cheia
-      local destination = itemList[1]
-
-      -- Procura uma pilha para completar o destino
-      for i = 2, #itemList do
-
-        local source = itemList[i]
-
-        if destination.count < MAX_STACK and source.count > 0 then
-
-          local missing = MAX_STACK - destination.count
-          local amount = math.min(missing, source.count)
-
-          if amount > 0 then
-            g_game.move(
-              source.item,
-              destination.position,
-              amount
-            )
-
+  local toStack = {}
+  for index, container in pairs(containers) do
+    if not container.lootContainer then -- ignore monster containers
+      for i, item in ipairs(container:getItems()) do
+        if item:isStackable() and item:getCount() < 100 then
+          local stackWith = toStack[item:getId()]
+          if stackWith then
+            g_game.move(item, stackWith[1], math.min(stackWith[2], item:getCount()))
             return
           end
+          toStack[item:getId()] = {container:getSlotPosition(i - 1), 100 - item:getCount()}
         end
       end
     end
